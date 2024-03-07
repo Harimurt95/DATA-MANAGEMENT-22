@@ -1,0 +1,4 @@
+﻿PAYMENT_METHOD_ID ,PAYMENT_METHOD_NAME 
+1,Credit_Card
+2,Debit_Card
+3,Cash_on_Delivery
