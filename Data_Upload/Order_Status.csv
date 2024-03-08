@@ -1,0 +1,7 @@
+﻿ORDER_STATUS_ID,ORDER_STATUS_NAME
+1,pending
+2,accepted
+3,rejected
+4,delivering
+5,closed
+6,returned
