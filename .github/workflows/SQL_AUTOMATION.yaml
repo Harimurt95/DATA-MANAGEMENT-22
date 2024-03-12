@@ -32,8 +32,8 @@ jobs:
           Rscript R/regression_plot.R
       - name: Add files
         run: |
-          git config --global user.email "harimurti.y.hp@gmail.com"
-          git config --global user.name "Harimurt95"
+          git config --global user.email "singhanirudh14@gmail.com"
+          git config --global user.name "Singhanirudh14"
           git add --Database/
       - name: Commit files
         run: |
