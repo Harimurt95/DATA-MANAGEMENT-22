@@ -1,0 +1,223 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-03-08"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(readr)
+library(RSQLite)
+library(dplyr)
+```
+
+```{r}
+my_connection <- RSQLite::dbConnect(RSQLite::SQLite(), "sample.db")
+```
+
+
+```{r}
+category_df <- readr::read_csv("CATEGORY.csv")
+country_df <- readr:: read_csv("Country.csv")
+customer_address_df <- readr::read_csv("Customer_Address.csv")
+order_df <- readr:: read_csv("ORDER_2.csv")
+order_status_df <- readr:: read_csv("Order_Status.csv")
+payment_method_df <- readr::read_csv("Payment_Method.csv")
+product_df <- readr :: read_csv("Product.csv")
+shipping_df <- readr:: read_csv("SHIPPING_2.csv")
+supplier_df <- readr :: read_csv("Supplier_2.csv")
+supplier_add_df <- readr :: read_csv("Supplier_Adress.csv")
+customer_df <- readr :: read_csv("Customer_2.csv")
+advert_df <- readr :: read_csv("Updated_AD-3.csv")
+
+customer_address_df <- customer_address_df %>% rename(COUNTRY_ID=COUNTRY)
+supplier_add_df <- supplier_add_df %>% rename(SUPPLIER_ADDRESS_ID=SUPPLIER_ADRESS_ID)
+supplier_add_df <- supplier_add_df %>% rename(COUNTRY_ID = COUNTRY)
+order_df <- order_df %>% rename(PAYMENT_METHOD_ID = PAYMENT_METHOD)
+```
+
+```{r}
+str(customer_df)
+customer_df$CUSTOMER_DOB <- as.Date(customer_df$CUSTOMER_DOB, format = "%m/%d/%Y")
+```
+
+
+
+```{sql connection=my_connection}
+
+CREATE TABLE CUSTOMER(
+"CUSTOMER_ID" INT PRIMARY KEY,
+"CUSTOMER_EMAIL" VARCHAR(320) NOT NULL,
+"CUSTOMER_PHONE_NUMBER" VARCHAR(20) NOT NULL,
+"CUSTOMER_FIRST_NAME" VARCHAR(40) NOT NULL,
+"CUSTOMER_MIDDLE_NAME" varchar(40) null,
+"CUSTOMER_LAST_NAME" varchar(40) not null,
+"CUSTOMER_DOB" date not null,
+"CUSTOMER_GENDER" varchar(10) not null,
+"CUSTOMER_ADDRESS_ID" int,
+foreign key ("CUSTOMER_ADDRESS_ID")
+  references ADDRESS("CUSTOEMR_ADDRESS_ID")
+)
+```
+
+## creating address table that references country table
+
+```{sql connection=my_connection}
+create table CUSTOMER_ADDRESS(
+"CUSTOMER_ADDRESS_ID" int primary key,
+"CUSTOMER_POSTCODE" varchar(20) not null,
+"CITY" varchar(20) not null,
+"COUNTRY_ID" int,
+foreign key ("COUNTRY_ID") 
+  references COUNTRY("COUNTRY_ID")
+)
+```
+
+## creating table country --reaching 2nf
+
+```{sql connection= my_connection}
+create table COUNTRY(
+"COUNTRY_ID" int primary key,
+"COUNTRY_NAME" varchar(20) not null
+)
+```
+
+## creating orders that references customer, product and order_status table
+```{sql connection= my_connection}
+CREATE TABLE ORDERS(
+"ORDER_ID" INT primary key,
+"CUSTOMER_ID" INT primary key,
+"PRODUCT_ID" INT PRIMARY KEY,
+"ORDER_STATUS_ID" int,
+"PURCHASE_DATE" date not null,
+"ORDER_ITEM_QTY" int not null,
+"PAYMENT_METHOD_ID" int,
+foreign key ("CUSTOMER_ID")
+  references CUSTOMER("CUSTOMER_ID")
+foreign key ("PRODUCT_ID")
+  references PRODUCT("PRODUCT_ID")
+foreign key ("ORDER_STATUS_ID") 
+  references ORDER_STATUS("ORDER_STATUS_ID")
+foreign key ("PAYMENt_METHOD_ID")
+  references PAYMENT("PAYMENT_METHOD_ID")
+)
+
+
+```
+
+## creating table order_status -- reaching 2nf
+```{sql connection=my_connection}
+create table ORDER_STATUS(
+"ORDER_STATUS_ID" int primary key,
+"ORDER_STATUS_NAME" varchar(40) not null
+)
+```
+
+## creating table product which references category and supplier table
+```{sql connection=my_connection}
+create table PRODUCT(
+"PRODUCT_ID" int primary key,
+"CATEGORY_ID" int,
+"SUPPLIER_ID" int,
+"PRODUCT_NAME" varchar(30) not null,
+"PRODUCT_DESCRIPTION" varchar(100) null,
+"PRODUCT_PRICE" int not null,
+"PRODUCT_QTY_AVAILABLE" int not null,
+foreign key ("CATEGORY_ID")
+  references CATEGORY("CATEGORY_ID")
+foreign key ("SUPPLIER_ID")
+  references SUPPLIER("SUPPLIER_ID")
+)
+```
+
+## creating table category -- reaching 2nf
+```{sql connection=my_connection}
+create table CATEGORY(
+"CATEGORY_ID" int primary key,
+"PARENT_CATEGORY_ID" int,
+"CATEGORY_NAME" varchar(40),
+foreign key ("PARENT_CATEGORY_ID") 
+  references CATEGORY("CATEGORY_ID")
+)
+```
+
+## creating table Supplier table
+```{sql connection=my_connection}
+create table SUPPLIER(
+"SUPPLIER_ID" int primary key,
+"SUPPLEIR_FIRST_NAME" varchar(40) not null,
+"SUPPLEIR_MIDDLE_NAME" varchar(40) null,
+"SUPPLIER_LAST_NAME" varchar(40) not null,
+"SUPPLIER_ADDRESS_ID" int,
+"SUPPLIER_EMAIL" varchar(40) not null,
+"SUPPLIER_PHONE" varchar(20) not null,
+"SUPPLIER_AGREEMENT" varchar(40) not null,
+foreign key ("SUPPLIER_ADDRESS_ID") 
+  references SUPPLIER_ADDRESS("SUPPLIER_ADDRESS_ID")
+)
+```
+
+
+## creating table Supplier_Address -- reaching 2nf because country table already exist 
+
+```{sql connection=my_connection}
+create table SUPPLIER_ADDRESS(
+"SUPPLIER_ADDRESS_ID" int primary key,
+"POSTCODE" varchar(40) not null,
+"CITY" varchar(40) not null,
+"COUNTRY_ID" int,
+foreign key ("COUNTRY_ID")
+  references COUNTRY("COUNTRY_ID")
+)
+```
+
+
+## creating shipping table that references order table
+```{sql connection=my_connection}
+create table SHIPPING(
+"SHIPPING_ID" int primary key,
+"ORDER_ID" int,
+"SHIPPING NAME" varchar(40) not null,
+"DISPATCH_DATE" date not null,
+"DELIVERY_DATE" date not null,
+foreign key ("ORDER_ID")
+  references ORDERS("ORDER_ID")
+)
+```
+
+## creating ADS table that references products table
+
+```{sql connection=my_connection}
+create table ADS(
+"AD_ID" int primary key,
+"PRODUCT_ID" int,
+"ADS_DESCRIPTION" varchar(50) not null,
+"DISCOUNT_RATE" int not null,
+"ADS_START_DATE" date not null,
+"ADS_END_DATE" date not null,
+foreign key ("PRODUCT_ID")
+  references PRODUCT("PRODUCT_ID")
+)
+```
+
+## creating payment_method table -- reaching 2nf
+```{sql connection = my_connection}
+create table PAYMENT_METHOD(
+"PAYMENT_METHOD_ID" int primary key,
+"PAYMENT_METHOD_NAME" varchar(50)
+)
+```
+
+
+
+
+
+
+
+
