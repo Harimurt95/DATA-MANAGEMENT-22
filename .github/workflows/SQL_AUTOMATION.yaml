@@ -19,7 +19,7 @@ jobs:
       - name: Cache R packages
         uses: actions/cache@v2
         with:
-          path: ${{ env.R_LIBS_USER }}
+          path: ${{/cloud/project/Data_Upload}}
           key: ${{ runner.os }}-r-${{ hashFiles('**/lockfile') }}
           restore-keys: |
             ${{ runner.os }}-r-
