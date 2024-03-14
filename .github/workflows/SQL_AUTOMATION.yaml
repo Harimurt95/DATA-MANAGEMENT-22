@@ -27,14 +27,19 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite"))'
+      - name: Execute R script for validation
+        run: |
+          R_code/DM_2nd_iter.R
       - name: Execute R script
         run: |
-          DM_1st_iter.Rmd
-      - name: Add files
+          DM_2nd_iter.R          
+      - name: Commit and Push Change
         run: |
           git config --global user.email "singhanirudh14@gmail.com"
           git config --global user.name "Singhanirudh14"
-          git add --Database/
+          git add .
+          git commit -m "Write new data"
+          git push
       - name: Commit files
         run: |
           git commit -m "Automate DDL Process"
