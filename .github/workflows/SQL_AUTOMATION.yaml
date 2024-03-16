@@ -32,8 +32,8 @@ jobs:
           R/Load_R.R
       - name: Commit and Push Change
         run: |
-          git config --global user.email "singhanirudh14@gmail.com"
-          git config --global user.name "Singhanirudh14"
+          git config --global user.email "shirui.gu@warwick.ac.uk"
+          git config --global user.name "SherryG810"
           git add .
           git commit -m "Write new data"
           git push
