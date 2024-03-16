@@ -33,13 +33,11 @@ jobs:
       - name: Execute R script for validation
         run: |
           Rscript R/Load_R.R
-      - name: Commit and Push Change
+      - name: Add files
         run: |
           git config --global user.email "shirui.gu@warwick.ac.uk"
           git config --global user.name "SherryG810"
-          git add .
-          git commit -m "Write new data"
-          git push
+          git add --all Database/
       - name: Commit files
         run: |
           git commit -m "Automate DDL Process"
