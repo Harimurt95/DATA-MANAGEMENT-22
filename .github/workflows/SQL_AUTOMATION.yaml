@@ -27,12 +27,12 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite"))'
-      - name: Execute R script for validation
-        run: |
-          R/Load_R.R
       - name: Make R script executable
         run: |
-          git update-index --chmod=+x R/Load_R.R
+          git update-index --chmod=+x R/Load_R.R      
+      - name: Execute R script for validation
+        run: |
+          Rscript R/Load_R.R
       - name: Commit and Push Change
         run: |
           git config --global user.email "shirui.gu@warwick.ac.uk"
