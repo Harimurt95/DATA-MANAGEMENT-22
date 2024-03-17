@@ -21,6 +21,7 @@ supplier_add_df <- readr :: read_csv("Data_Upload/SUPPLIER_ADDRESS.csv")
 customer_df <- readr :: read_csv("Data_Upload/CUSTOMER.csv")
 advert_df <- readr :: read_csv("Data_Upload/ADS.csv")
 
+
 # Generate Data for SHIPPING
 # Generate Dispatch date
 set.seed(123)
@@ -53,19 +54,12 @@ order_no_review <- order_detail_df$ORDER_ID[order_detail_df$ORDER_STATUS_ID %in%
 order_df$REVIEW_RATING[order_df$ORDER_ID %in% order_no_review] <- NA
 
 
-
 # Data Quality Check
 order_detail_df$PURCHASE_DATE <- as.Date(order_detail_df$PURCHASE_DATE,format = "%m/%d/%Y")
 advert_df$ADS_START_DATE <- as.Date(advert_df$ADS_START_DATE,format = "%m/%d/%Y")
 advert_df$ADS_END_DATE <- as.Date(advert_df$ADS_END_DATE,format = "%m/%d/%Y")
 customer_df$CUSTOMER_DOB <- as.Date(customer_df$CUSTOMER_DOB,format = "%m/%d/%Y")
 
-shipping_df$DISPATCH_DATE <- format(shipping_df$DISPATCH_DATE,"%Y-%m-%d")
-shipping_df$DELIVERY_DATE <- format(shipping_df$DELIVERY_DATE,"%Y-%m-%d")
-order_detail_df$PURCHASE_DATE <- format(order_detail_df$PURCHASE_DATE,"%Y-%m-%d")
-advert_df$ADS_START_DATE <- format(advert_df$ADS_START_DATE,"%Y-%m-%d")
-advert_df$ADS_END_DATE <- format(advert_df$ADS_END_DATE,"%Y-%m-%d")
-customer_df$CUSTOMER_DOB <- format(customer_df$CUSTOMER_DOB,"%Y-%m-%d")
 
 convert_to_integer <- function(df) {
   cols <- grep("_ID$", names(df), value = TRUE)
@@ -97,22 +91,44 @@ product_df$PRODUCT_QTY_AVAILABLE <- as.integer(product_df$PRODUCT_QTY_AVAILABLE)
 customer_address_df$CUSTOMER_POSTCODE <- as.integer(customer_address_df$CUSTOMER_POSTCODE)
 supplier_add_df$SUPPLIER_POSTCODE <- as.integer(supplier_add_df$SUPPLIER_POSTCODE)
 customer_address_df$CUSTOMER_ADDRESS_NUMBER <- as.integer(customer_address_df$CUSTOMER_ADDRESS_NUMBER)
+
+
 all_files <- list.files("Data_Upload/")
 file_to_exclude <- "README.md"
 all_files <- setdiff(all_files, file_to_exclude)
 
-# Check number of columns and observations
-for (variable in all_files) {
-  this_filepath <- paste0("Data_Upload/",variable)
-  this_file_contents <- readr::read_csv(this_filepath)
+## checking the column names
+datasets <- list(customer_address_df, customer_df, order_detail_df, order_df, order_status_df, shipping_df, supplier_add_df, supplier_df, payment_method_df, product_df, category_df, country_df, advert_df)
+for (i in seq_along(datasets)) {
+  print(names(datasets[[i]]))
+  cat("\n")
+}
+
+## unit testing - checking row and columns
+for (variable in all_files){
+  this_filepath <- paste0("Data_Upload/", variable)
+  this_file_contents <- readr :: read_csv(this_filepath)
   number_of_rows <- nrow(this_file_contents)
-  number_of_columns <- ncol(this_file_contents)
-  
-  print(paste0("The file: ",variable,
-               " has: ",
-               format(number_of_rows,big.mark = ","),
-               " rows and ",
-               number_of_columns," columns"))
+  number_of_cols <- ncol(this_file_contents)
+  print(paste0("this file: ",variable, " has: ",       
+               format(number_of_rows, big.mark = ","),
+               " rows and ", number_of_cols, " columns"))
+}
+
+##checking for missing values
+for (data in datasets){
+  missing_values <- colSums(is.na(data))
+  print("missing_values")
+  print(missing_values)
+}
+
+
+## check for unique values
+for (data in datasets){
+  suffix <- ".csv"
+  unique_values <- sapply(data, function(x) length(unique(x)))
+  print("Unique values in categorical columns:")
+  print(unique_values)
 }
 
 
@@ -134,68 +150,196 @@ for (variable in all_files){
   }
 }
 
+#Based on the information provided above, 
+#it's evident that the distinct columns in our data sets, 
+#acting as primary keys in the tables, are indeed unique. 
+#This is apparent because the total number of rows in the data set matches the count of unique values.
 
-## checking the head of the data
-df_list <- list(customer_df,advert_df, country_df, customer_address_df, category_df, 
-                order_df, order_status_df, order_detail_df, 
-                product_df, supplier_df, supplier_add_df, 
-                payment_method_df, shipping_df)
-names(df_list) <- c("customer_df","advert_df", "country_df", "customer_address_df", "category_df", 
-                    "order_df", "order_status_df", "order_detail_df", 
-                    "product_df", "supplier_df", "supplier_add_df", 
-                    "payment_method_df", "shipping_df")
 
-analyze_df <- function(df) {
-  print(head(df))
+### checking the data types of all cols in a dataset
+for (data in datasets){
+  str(data)
 }
-results <- lapply(df_list, analyze_df)
+
+#The provided code allows us to verify the data types of each column within a data set. Upon inspection, it becomes evident that the data types are accurately assigned to their respective columns within the data set.
 
 
-## checking the structure of the data
-analyze_df <- function(df) {
-  print(str(df))
+### checking for duplicated rows
+for (index in seq_along(datasets)){
+  if (any(duplicated(datasets[[i]]))){
+    print("Duplicate values found!")
+  } else{
+    print("Duplicates not found!")
+  }
 }
-results <- lapply(df_list, analyze_df)
+sum(duplicated(customer_df))
 
-## checking the column names
-analyze_df <- function(df) {
-  print(colnames(df))
+
+
+
+library(validate)
+
+## Customer Data
+### check email column in customers dataset
+data <- customer_df$CUSTOMER_EMAIL
+check_email_quality <- function(emails) {
+  valid <- grepl("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b", emails)
+  return(valid)
 }
-results <- lapply(df_list, analyze_df)
+email_quality <- check_email_quality(data)
+print(email_quality)
 
-## Data Quality Checks 
-### Pre-processing Quality Check
-##checking for missing values
-analyze_df <- function(df) {
-  missing_values <- colSums(is.na(df))
-  print("Missing values: ")
-  print(missing_values)
+
+### checking the phone number of customers in dataset
+rules <- validator(nchar(gsub("-", "", customer_df$CUSTOMER_PHONE_NUMBER)) == 10)
+out <- confront(customer_df, rules)
+summary(out)
+
+### checking the customer_first_name values
+data <- customer_df$CUSTOMER_FIRST_NAME
+check_name_quality <- function(names){
+  valid <- grepl("\\b[A-Za-z]",names)
 }
-results <- lapply(df_list, analyze_df)
+name_quality <- check_name_quality(data)
+print(name_quality)
 
-
-## check for non-numeric values in numeric cols
-analyze_df <- function(df) {
-  non_numeric_values <- sapply(df, function(x) {
-    sum(!is.na(as.numeric(x)))
-  })
-  print(non_numeric_values)
+### checking the customer_middle_name values
+data <- customer_df$CUSTOMER_MIDDLE_NAME
+check_name_quality <- function(names){
+  valid <- grepl("\\b[A-Za-z]",names)
 }
-results <- lapply(df_list, analyze_df)
+name_quality <- check_name_quality(data)
+print(name_quality)
 
-
-## check for unique values
-df_list <- list(customer_df,advert_df, country_df, customer_address_df, category_df, 
-                order_df, order_status_df, order_detail_df, 
-                product_df, supplier_df, supplier_add_df, 
-                payment_method_df, shipping_df)
-names(df_list) <- all_files
-for (df_name in names(df_list)) {
-  df <- df_list[[df_name]]
-  unique_values <- sapply(df, function(x) length(unique(x)))
-  print(paste("Unique values in categorical columns of", df_name, ":"))
-  print(unique_values)
+### checking the customer_last_name values
+data <- customer_df$CUSTOMER_LAST_NAME
+check_name_quality <- function(names){
+  valid <- grepl("\\b[A-Za-z]",names)
 }
+name_quality <- check_name_quality(data)
+print(name_quality)
+
+
+## ADS Data
+### checking start_date and end_date
+start_date <- advert_df$ADS_START_DATE
+end_date <- advert_df$ADS_END_DATE
+if (all(start_date < end_date)){
+  print("Start date is before end date")
+} else{
+  print("start date is after end date")
+}
+
+
+### checking referential integrity for customer_df and order_df
+# customer_id is the primary key from table customer_df
+p_key <- customer_df$CUSTOMER_ID
+# customer_id is the foreign key from table in order_df 
+f_key <- order_df$CUSTOMER_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for product_df and order_df
+# product_id is the primary key from table product_df 
+p_key <- product_df$PRODUCT_ID
+f_key <- order_df$PRODUCT_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for order_details and order_df
+p_key <- order_detail_df$ORDER_ID
+f_key <- order_df$ORDER_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for advert_df and product_df
+f_key <- advert_df$PRODUCT_ID
+p_key <- product_df$PRODUCT_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for order_detail_df and order_status_df
+p_key <-  order_status_df$ORDER_STATUS_ID
+f_key <- order_detail_df$ORDER_STATUS_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+
+### checking referential integrity for category_df and product_df
+p_key <- category_df$PRODUCT_CATEGORY_ID
+f_key <- product_df$PRODUCT_CATEGORY_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking the referential integrity for supplier_df and product_df
+p_key <- supplier_df$SUPPLIER_ID
+f_key <- product_df$SUPPLIER_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for order_df and shipping_df
+p_key <- order_df$ORDER_ID
+f_key <- shipping_df$ORDER_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for country_df and supplier_address_df
+p_key <- country_df$COUNTRY_ID
+f_key <- supplier_add_df$COUNTRY_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+
+### checking referential integrity for country_df and customer_address_df
+p_key <- country_df$COUNTRY_ID
+f_key <- customer_address_df$COUNTRY_ID
+if (all(f_key %in% p_key)){
+  print("Referential Integrity maintained")
+}else{
+  print("not maintained")
+}
+
+shipping_df$DISPATCH_DATE <- format(shipping_df$DISPATCH_DATE,"%Y-%m-%d")
+shipping_df$DELIVERY_DATE <- format(shipping_df$DELIVERY_DATE,"%Y-%m-%d")
+order_detail_df$PURCHASE_DATE <- format(order_detail_df$PURCHASE_DATE,"%Y-%m-%d")
+advert_df$ADS_START_DATE <- format(advert_df$ADS_START_DATE,"%Y-%m-%d")
+advert_df$ADS_END_DATE <- format(advert_df$ADS_END_DATE,"%Y-%m-%d")
+customer_df$CUSTOMER_DOB <- format(customer_df$CUSTOMER_DOB,"%Y-%m-%d")
 
 # Write data to database
 RSQLite::dbWriteTable(my_connection,"PRODUCT",product_df,overwrite=FALSE,append=TRUE) 
