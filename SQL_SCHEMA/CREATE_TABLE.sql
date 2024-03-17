@@ -16,9 +16,9 @@ foreign key ("CUSTOMER_ADDRESS_ID")
 
 create table CUSTOMER_ADDRESS(
 "CUSTOMER_ADDRESS_ID" int primary key,
-"CUSTOMER_ADDRESS_NUMBER" varchar(10) not null,
+"CUSTOMER_ADDRESS_NUMBER" int not null,
 "CUSTOMER_STREET" varchar(40) not null,
-"CUSTOMER_POSTCODE" varchar(20) not null,
+"CUSTOMER_POSTCODE" int not null,
 "CUSTOMER_CITY" varchar(20) not null,
 "COUNTRY_ID" varchar(10),
 foreign key ("COUNTRY_ID") 
@@ -99,7 +99,7 @@ foreign key ("SUPPLIER_ADDRESS_ID")
 
 create table SUPPLIER_ADDRESS(
 "SUPPLIER_ADDRESS_ID" int primary key,
-"SUPPLIER_POSTCODE" varchar(40) not null,
+"SUPPLIER_POSTCODE" int not null,
 "SUPPLIER_CITY" varchar(40) not null,
 "COUNTRY_ID" varchar(10),
 foreign key ("COUNTRY_ID")
