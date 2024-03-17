@@ -348,10 +348,3 @@ for (variable in all_files){
     }
   }
 }
-
-
-
-
-
-
-
