@@ -21,7 +21,6 @@ for (file in all_files) {
   assign(data_frame_name, read_csv(file))
 }
 
-
 ## unit testing - checking row and columns
 for (file_path in all_files){
   this_file_contents <- readr :: read_csv(file_path)
@@ -32,9 +31,13 @@ for (file_path in all_files){
                " rows and ", number_of_cols, " columns"))
 }
 
+orders_files <- list.files(path = "Data_Append", 
+                           pattern = "^ORDERS_\\d+\\.csv$", 
+                           full.names = TRUE)
+
 # Check for unique constraint for primary key
 for (file_path in all_files){
-  if (file_path != "Data_Append/ORDERS_2.csv"){
+  if (file_path != orders_files){
     this_file_contents <- readr::read_csv(file_path)
     number_of_rows <- nrow(this_file_contents)
     print(paste0("Checking for: ",file_path))
@@ -47,6 +50,7 @@ for (file_path in all_files){
     print(paste0(" is ",nrow(unique(this_file_contents[,c("ORDER_ID", "CUSTOMER_ID", "PRODUCT_ID")]))==number_of_rows))
   }
 }
+
 
 # Convert data type
 convert_to_integer <- function(df) {
@@ -64,11 +68,11 @@ if (exists("shipping_df")) {
 }
 
 
-if (exists("advert_df")) {
+if (exists("ads_df")) {
   try({
-    advert_df$ADS_START_DATE <- as.Date(advert_df$ADS_START_DATE,format = "%m/%d/%Y")
-    advert_df$ADS_END_DATE <- as.Date(advert_df$ADS_END_DATE,format = "%m/%d/%Y")
-    advert_df <- convert_to_integer(advert_df)
+    ads_df$ADS_START_DATE <- as.Date(ads_df$ADS_START_DATE,format = "%m/%d/%Y")
+    ads_df$ADS_END_DATE <- as.Date(ads_df$ADS_END_DATE,format = "%m/%d/%Y")
+    ads_df <- convert_to_integer(ads_df)
   }, silent = TRUE)
 }
 
@@ -124,6 +128,24 @@ if (exists("supplier_address_df")) {
   }, silent = TRUE)
 }
 
+if (exists("payment_method_df")) {
+  try({
+    payment_method_df <- convert_to_integer(payment_method_df)
+  }, silent = TRUE)
+}
+
+if (exists("order_status_df")) {
+  try({
+    order_status_df <- convert_to_integer(order_status_df)
+  }, silent = TRUE)
+}
+
+if (exists("category_df")) {
+  try({
+    category_df$PRODUCT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PRODUCT_CATEGORY_ID))
+    category_df$PARENT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PARENT_CATEGORY_ID))
+  }, silent = TRUE)
+}
 
 
 # Check column names
@@ -136,8 +158,8 @@ for (data in datasets) {
 
 
 # Check missing values
-for (data_name in datasets) {
-  df <- get(data_name)  
+for (data in datasets) {
+  df <- get(data)  
   if (is.data.frame(df)) {  
     missing_values <- colSums(is.na(df)) 
     print(missing_values)
@@ -145,14 +167,12 @@ for (data_name in datasets) {
 }
 
 # Check unique values
-for (data in datasets){
-  df <- get(data)
-  suffix <- ".csv"
-  unique_values <- sapply(data, function(x) length(unique(x)))
-  print("Unique values in categorical columns:")
+for (data in datasets) {
+  df <- get(data) 
+  unique_values <- sapply(df, function(x) if (is.vector(x)) length(unique(x)) else NA)
+  print(paste("Unique values in columns of", data, ":"))
   print(unique_values)
 }
-
 
 # Check structure
 for (data in datasets){
@@ -212,9 +232,9 @@ name_quality <- check_name_quality(data)
 print(name_quality)
 
 # Check start date and end date of advertisement
-if (exists("advert_df")) {
-  start_date <- advert_df$ADS_START_DATE
-  end_date <- advert_df$ADS_END_DATE
+if (exists("ads_df")) {
+  start_date <- ads_df$ADS_START_DATE
+  end_date <- ads_df$ADS_END_DATE
   
   if (all(start_date < end_date)) {
     print("Start date is before end date")
@@ -222,22 +242,23 @@ if (exists("advert_df")) {
     print("Start date is after end date")
   }
 } else {
-  print("advert_df does not exist")
+  print("ads_df does not exist")
 }
 
 # Check dispatch date and delivery date
 if (exists("shipping_df")) {
   dispatch_date <- shipping_df$DISPATCH_DATE
-  delievry_date <- shipping_df$DELIVERY_DATE
+  delivery_date <- shipping_df$DELIVERY_DATE
   
-  if (all(dispatch_date < delivery_date)) {
-    print("Dispatch date is before delievry date")
+  if (all(dispatch_date < delivery_date, na.rm = TRUE)) {
+    print("All dispatch dates are before delivery dates")
   } else {
-    print("Dispatch date is after delivery date")
+    print("Some dispatch dates are after delivery dates or there are NA values")
   }
 } else {
   print("shipping_df does not exist")
 }
+
 
 all_tables <- c("ADS", "PRODUCT_CATEGORY", "COUNTRY", "CUSTOMER_ADDRESS", "CUSTOMER", 
                 "ORDER_DETAIL", "ORDER_STATUS", "ORDERS", "PAYMENT_METHOD",
@@ -287,29 +308,29 @@ if (exists("order_detail_df") && exists("orders_df")) {
   }
 }
 
-
-### checking referential integrity for advert_df and product_df
-if (exists("advert_df") && (exists("product_df") || exists("PRODUCT"))) {
+### checking referential integrity for ads_df and product_df
+if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
   if (exists("product_df")) {
     p_key <- unique(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID)
   } else if (exists("PRODUCT")) {
     p_key <- PRODUCT$PRODUCT_ID
   }
-  f_key <- advert_df$PRODUCT_ID
+  f_key <- ads_df$PRODUCT_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
   } else {
     print("Referential Integrity not maintained")
   }
 } else {
-  print("advert_df does not exist")
+  print("ads_df does not exist")
 }
 
-
 ### checking referential integrity for order_detail_df and order_status_df
-if (exists("order_detail_df") && (exists("ORDER_STATUS"))) {
+if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_status_df")))) {
   f_key <- order_detail_df$ORDER_STATUS_ID
-  p_key <- ORDER_STATUS$ORDER_STATUS_ID
+  if (exists("order_status_df")) {
+    p_key <- order_detail_df$ORDER_STATUS_ID
+  } else p_key <- ORDER_STATUS$ORDER_STATUS_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
   } else {
@@ -317,14 +338,17 @@ if (exists("order_detail_df") && (exists("ORDER_STATUS"))) {
   }
 }
 
+
 ### checking referential integrity for category_df and product_df
-if (exists("PRODUCT_CATEGORY") && (exists("product_df") || exists("PRODUCT"))) {
+if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
     f_key <- unique(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID)
   } else if (exists("PRODUCT")) {
     f_key <- PRODUCT$PRODUCT_CATEGORY_ID
   }
-  p_key <- PRODUCT_CATEGORY$PRODUCT_CATEGORY_ID
+  if (exists("category_df")){
+    p_key <- category_df$PRODUCT_CATEGORY_ID
+  } else p_key <- PRODUCT_CATEGORY$PRODUCT_CATEGORY_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
   } else {
@@ -368,9 +392,11 @@ if (exists("order_detail_df") && (exists("shipping_df"))) {
 }
 
 ### checking referential integrity for country_df and supplier_address_df
-if (exists("COUNTRY") && (exists("supplier_address_df"))) {
+if (((exists("COUNTRY")) || (exists("country_df")) && (exists("supplier_address_df")))) {
   f_key <- supplier_address_df$COUNTRY_ID
-  p_key <- COUNTRY$COUNTRY_ID
+  if (exists("country_df")) {
+    p_key <- country_df$COUNTRY_ID
+  } else p_key <- COUNTRY$COUNTRY_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
   } else {
@@ -382,9 +408,11 @@ if (exists("COUNTRY") && (exists("supplier_address_df"))) {
 
 
 ### checking referential integrity for country_df and customer_address_df
-if (exists("COUNTRY") && (exists("customer_address_df"))) {
+if (((exists("COUNTRY")) || (exists("country_df")) && (exists("customer_address_df")))) {
   f_key <- customer_address_df$COUNTRY_ID
-  p_key <- COUNTRY$COUNTRY_ID
+  if (exists("country_df")){
+    p_key <- country_df$COUNTRY_ID
+  } else p_key <- COUNTRY$COUNTRY_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
   } else {
@@ -432,6 +460,7 @@ if (exists("supplier_df") || exists("supplier_address_df") && (exists("SUPPLIER_
   print("customer_df does not exist")
 }
 
+
 if (exists("shipping_df")) {
   try({
     shipping_df$DISPATCH_DATE <- format(shipping_df$DISPATCH_DATE,"%Y-%m-%d")
@@ -440,10 +469,10 @@ if (exists("shipping_df")) {
 }
 
 
-if (exists("advert_df")) {
+if (exists("ads_df")) {
   try({
-    advert_df$ADS_START_DATE <- format(advert_df$ADS_START_DATE,"%Y-%m-%d")
-    advert_df$ADS_END_DATE <- format(advert_df$ADS_END_DATE,"%Y-%m-%d")
+    ads_df$ADS_START_DATE <- format(ads_df$ADS_START_DATE,"%Y-%m-%d")
+    ads_df$ADS_END_DATE <- format(ads_df$ADS_END_DATE,"%Y-%m-%d")
   }, silent = TRUE)
 }
 
@@ -509,20 +538,201 @@ if (exists("shipping_df")) {
   }, silent = TRUE)
 }
 
-if (exists("advert_df")) {
+if (exists("ads_df")) {
   try({
-    existence_check <- advert_df[[1]] %in% ADVERT[[1]]
+    existence_check <- ads_df[[1]] %in% ADS[[1]]
     print(existence_check)
   }, silent = TRUE)
 }
 
-RSQLite::dbWriteTable(my_connection,"PRODUCT",product_df,overwrite=FALSE,append=TRUE) 
-RSQLite::dbWriteTable(my_connection,"CUSTOMER",customer_df,overwrite=FALSE,append=TRUE) 
-RSQLite::dbWriteTable(my_connection,"ORDERS",orders_df,overwrite=FALSE,append=TRUE) 
-RSQLite::dbWriteTable(my_connection,"SUPPLIER",supplier_df,overwrite=FALSE,append=TRUE) 
-RSQLite::dbWriteTable(my_connection,"SUPPLIER_ADDRESS",supplier_address_df,overwrite=FALSE,append=TRUE) 
-RSQLite::dbWriteTable(my_connection,"CUSTOMER_ADDRESS",customer_address_df,overwrite=FALSE,append=TRUE)
-RSQLite::dbWriteTable(my_connection,"ORDER_DETAIL",order_detail_df,overwrite=FALSE,append=TRUE) 
+
+if (exists("product_df")) {
+  RSQLite::dbWriteTable(my_connection, "PRODUCT", product_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("customer_df")) {
+  RSQLite::dbWriteTable(my_connection, "CUSTOMER", customer_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("orders_df")) {
+  RSQLite::dbWriteTable(my_connection, "ORDERS", orders_df, overwrite = FALSE, append = TRUE)
+}
+
+if (exists("supplier_df")) {
+  RSQLite::dbWriteTable(my_connection, "SUPPLIER", supplier_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("supplier_address_df")) {
+  RSQLite::dbWriteTable(my_connection, "SUPPLIER_ADDRESS", supplier_address_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("customer_address_df")) {
+  RSQLite::dbWriteTable(my_connection, "CUSTOMER_ADDRESS", customer_address_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("order_detail_df")) {
+  RSQLite::dbWriteTable(my_connection, "ORDER_DETAIL", order_detail_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("order_status_df")) {
+  RSQLite::dbWriteTable(my_connection, "ORDER_STATUS", order_status_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("payment_method_df")) {
+  RSQLite::dbWriteTable(my_connection, "PAYMENT_METHOD", payment_method_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("shipping_df")) {
+  RSQLite::dbWriteTable(my_connection, "SHIPPING", shipping_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("country_df")) {
+  RSQLite::dbWriteTable(my_connection, "COUNTRY", country_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("ads_df")) {
+  RSQLite::dbWriteTable(my_connection, "ADS", ads_df, overwrite = FALSE, append = TRUE)
+} 
+
+if (exists("category_df")) {
+  RSQLite::dbWriteTable(my_connection, "PRODUCT_CATEGORY", category_df, overwrite = FALSE, append = TRUE)
+} 
+
+expected_PAYMENT_METHOD <- c("PAYMENT_METHOD_ID", "PAYMENT_METHOD_NAME")
+
+expected_CUSTOMER <- c("CUSTOMER_ID", "CUSTOMER_EMAIL", "CUSTOMER_PHONE_NUMBER", "CUSTOMER_FIRST_NAME", "CUSTOMER_MIDDLE_NAME",  "CUSTOMER_LAST_NAME","CUSTOMER_DOB", "CUSTOMER_GENDER",  "CUSTOMER_ADDRESS_ID")
+
+expected_ADS <- c("AD_ID", "PRODUCT_ID", "ADS_DESCRIPTION", "DISCOUNT_RATE", "ADS_START_DATE",  "ADS_END_DATE")
+
+expected_PRODUCT_CATEGORY <- c("PRODUCT_CATEGORY_ID", "PARENT_CATEGORY_ID", "CATEGORY_NAME")
+
+expected_COUNTRY <- c("COUNTRY_ID", "COUNTRY_NAME")
+
+expected_CUSTOMER_ADDRESS <- c("CUSTOMER_ADDRESS_ID", "CUSTOMER_ADDRESS_NUMBER", "CUSTOMER_STREET", "CUSTOMER_POSTCODE", "CUSTOMER_CITY", "COUNTRY_ID")
+
+expected_ORDER_DETAIL <- c("ORDER_ID", "ORDER_STATUS_ID", "PURCHASE_DATE", "PAYMENT_METHOD_ID")
+
+expected_ORDER_STATUS <- c("ORDER_STATUS_ID", "ORDER_STATUS_NAME")
+
+expected_ORDERS <- c("ORDER_ID", "CUSTOMER_ID", "PRODUCT_ID", "ORDER_ITEM_QTY","REVIEW_RATING")
+
+expected_PRODUCT <- c("PRODUCT_ID", "PRODUCT_CATEGORY_ID", "SUPPLIER_ID", "PRODUCT_NAME", "PRODUCT_DESCRIPTION", "PRODUCT_PRICE", "PRODUCT_QTY_AVAILABLE")
+
+expected_SHIPPING <- c("SHIPPING_ID", "ORDER_ID", "SHIPPING_NAME", "DISPATCH_DATE", "DELIVERY_DATE")
+
+expected_SUPPLIER <- c("SUPPLIER_ID", "SUPPLIER_FIRST_NAME", "SUPPLIER_MIDDLE_NAME", "SUPPLIER_LAST_NAME", "SUPPLIER_ADDRESS_ID", "SUPPLIER_EMAIL", "SUPPLIER_PHONE", "SUPPLIER_AGREEMENT")
+
+expected_SUPPLIER_ADDRESS <- c("SUPPLIER_ADDRESS_ID", "SUPPLIER_POSTCODE", "SUPPLIER_CITY", "COUNTRY_ID")
+
+all_files <- list.files("Data_Append/")
+for (variable in all_files){
+  table_name <-  gsub("_\\d+\\.csv$", "", variable)
+  if (table_name == "CUSTOMER"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_CUSTOMER, actual_schema)) {
+      print("CUSTOMER Schema validated sucessfully")
+    }else{
+      print("CUSTOMER Schema validation failed")
+    }
+  }
+  if (table_name == "CUSTOMER_ADDRESS"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_CUSTOMER_ADDRESS, actual_schema)) {
+      print("CUSTOMER_ADDRESS Schema validated sucessfully")
+    }else{
+      print("CUSTOMER_ADDRESS Schema validation failed")
+    }
+  }
+  if (table_name == "ADS"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_ADS, actual_schema)) {
+      print("ADS Schema validated sucessfully")
+    }else{
+      print("ADS Schema validation failed")
+    }
+  }
+  if (table_name == "PRODUCT_CATEGORY"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_CATEGORY, actual_schema)) {
+      print("PRODUCT_CATEGORY Schema validated sucessfully")
+    }else{
+      print("PRODUCT_CATEGORY Schema validation failed")
+    }
+  }
+  if (table_name == "COUNTRY"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_COUNTRY, actual_schema)) {
+      print("COUNTRY Schema validated sucessfully")
+    }else{
+      print("COUNTRY Schema validation failed")
+    }
+  }
+  if (table_name == "ORDER_DETAIL"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_ORDER_DETAIL, actual_schema)) {
+      print("ORDER_DETAIL Schema validated sucessfully")
+    }else{
+      print("ORDER_DETAIL Schema validation failed")
+    }
+  }
+  if (table_name == "ORDER_STATUS"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_ORDER_STATUS, actual_schema)) {
+      print("ORDER_STATUS Schema validated sucessfully")
+    }else{
+      print("ORDER_STATUS Schema validation failed")
+    }
+  }
+  if (table_name == "ORDERS"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_ORDERS, actual_schema)) {
+      print("ORDERS Schema validated sucessfully")
+    }else{
+      print("ORDERS Schema validation failed")
+    }
+  }
+  if (table_name == "PAYMENT_METHOD"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_PAYMENT_METHOD, actual_schema)) {
+      print("PAYMENT_METHOD Schema validated sucessfully")
+    }else{
+      print("PAYMENT_METHOD Schema validation failed")
+    }
+  }
+  if (table_name == "PRODUCT"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_PRODUCT, actual_schema)) {
+      print("PRODUCT Schema validated sucessfully")
+    }else{
+      print("PRODUCT Schema validation failed")
+    }
+  }
+  if (table_name == "SHIPPING"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_SHIPPING, actual_schema)) {
+      print("SHIPPING Schema validated sucessfully")
+    }else{
+      print("SHIPPING Schema validation failed")
+    }
+  }
+  if (table_name == "SUPPLIER_ADDRESS"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_SUPPLIER_ADDRESS, actual_schema)) {
+      print("SUPPLIER_ADDRESS Schema validated sucessfully")
+    }else{
+      print("SUPPLIER_ADDRESS Schema validation failed")
+    }
+  }
+  if (table_name == "SUPPLIER"){
+    actual_schema <- dbListFields(my_connection, table_name)
+    if(identical(expected_SUPPLIER, actual_schema)) {
+      print("SUPPLIER Schema validated sucessfully")
+    }else{
+      print("SUPPLIER Schema validation failed")
+    }
+  }
+}
+
 
 
 
