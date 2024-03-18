@@ -33,6 +33,9 @@ jobs:
       - name: Execute R script for validation
         run: |
           Rscript R/Load_R.R
+      - name: Execute R script for second iteration 
+        run: |
+          Rscript R/Append_R.R
       - name: Add files
         run: |
           git config --global user.email "shirui.gu@warwick.ac.uk"
