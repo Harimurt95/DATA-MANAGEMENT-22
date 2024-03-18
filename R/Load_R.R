@@ -79,7 +79,6 @@ order_detail_df <- convert_to_integer(order_detail_df)
 
 customer_address_df$CUSTOMER_ADDRESS_ID <- as.integer(customer_address_df$CUSTOMER_ADDRESS_ID)
 supplier_add_df$SUPPLIER_ADDRESS_ID <- as.integer(supplier_add_df$SUPPLIER_ADDRESS_ID)
-
 category_df$PRODUCT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PRODUCT_CATEGORY_ID))
 category_df$PARENT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PARENT_CATEGORY_ID))
 
@@ -306,7 +305,7 @@ if (all(f_key %in% p_key)){
 
 
 ### checking referential integrity for order_df and shipping_df
-p_key <- order_df$ORDER_ID
+p_key <- order_detail_df$ORDER_ID
 f_key <- shipping_df$ORDER_ID
 if (all(f_key %in% p_key)){
   print("Referential Integrity maintained")
