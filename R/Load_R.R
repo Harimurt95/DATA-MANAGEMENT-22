@@ -86,15 +86,6 @@ convert_to_integer <- function(df) {
   return(df)
 }
 
-if (exists("shipping_df")) {
-  try({
-    shipping_df$DISPATCH_DATE <- format(shipping_df$DISPATCH_DATE, "%Y-%m-%d")
-    shipping_df$DELIVERY_DATE <- format(shipping_df$DELIVERY_DATE, "%Y-%m-%d")
-    shipping_df <- convert_to_integer(shipping_df)
-  }, silent = TRUE)
-}
-
-
 if (exists("ads_df")) {
   try({
     ads_df$ADS_START_DATE <- as.Date(ads_df$ADS_START_DATE,format = "%m/%d/%Y")
@@ -486,6 +477,34 @@ if (exists("supplier_df") || exists("supplier_address_df") && (exists("SUPPLIER_
 } else {
   print("customer_df does not exist")
 }
+
+if (exists("shipping_df")) {
+  try({
+    shipping_df$DISPATCH_DATE <- format(shipping_df$DISPATCH_DATE, "%Y-%m-%d")
+    shipping_df$DELIVERY_DATE <- format(shipping_df$DELIVERY_DATE, "%Y-%m-%d")
+    shipping_df <- convert_to_integer(shipping_df)
+  }, silent = TRUE)
+}
+
+if (exists("ads_df")) {
+  try({
+    ads_df$ADS_START_DATE <- format(ads_df$ADS_START_DATE,"%Y-%m-%d")
+    ads_df$ADS_END_DATE <- format(ads_df$ADS_END_DATE,"%Y-%m-%d")
+  }, silent = TRUE)
+}
+
+if (exists("customer_df")) {
+  try({
+    customer_df$CUSTOMER_DOB <- format(customer_df$CUSTOMER_DOB,"%Y-%m-%d")
+  }, silent = TRUE)
+}
+
+if (exists("order_detail_df")) {
+  try({
+    order_detail_df$PURCHASE_DATE <- format(order_detail_df$PURCHASE_DATE,"%Y-%m-%d")
+  }, silent = TRUE)
+}
+
 
 if (exists("product_df")) {
   RSQLite::dbWriteTable(my_connection, "PRODUCT", product_df, overwrite = FALSE, append = TRUE)
