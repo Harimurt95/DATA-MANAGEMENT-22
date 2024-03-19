@@ -27,5 +27,9 @@ order_status_info <- ORDER_DETAIL %>%
     ORDER_STATUS_ID == 6 ~ "Returned",
     TRUE ~ as.character(ORDER_STATUS_ID)))
 
+this_filename_date <- as.character(Sys.Date())
+# format the Sys.time() to show only hours and minutes 
+this_filename_time <- as.character(format(Sys.time(), format = "%H_%M"))
+
 excel_filename <- paste0("Excel_results/order_status_info_", this_filename_date, "_", this_filename_time, ".xlsx")
 write.xlsx(order_status_info, file = excel_filename)
