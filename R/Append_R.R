@@ -35,17 +35,17 @@ folder_table_mapping <- list(
 
 column_types_mapping <- list(
   "PRODUCT_CATEGORY" = c("PRODUCT_CATEGORY_ID" = "int", "PARENT_CATEGORY_ID" = "int"),
-  "CUSTOMER" = c("CUSTOMER_ID" = "int", "CUSTOMER_ADDRESS_ID" = "int"),
+  "CUSTOMER" = c("CUSTOMER_ID" = "int", "CUSTOMER_ADDRESS_ID" = "int","CUSTOMER_DOB" = "date"),
   "CUSTOMER_ADDRESS_ID" = c("CUSTOMER_ADDRESS_ID" = "int","CUSTOMER_POSTCODE"="int"),
   "SUPPLIER" = c("SUPPLIER_ID" = "int","SUPPLIER_ADDRESS_ID" = "int"),
   "SUPPLIER_ADDRESS" = c("SUPPLIER_ID"="int","SUPPLIER_POSTCODE"="int"),
   "PRODUCT" = c("PRODUCT_ID" = "int", "PRODUCT_CATEGORY_ID"="int","SUPPLIER_ID" = "int", 
                 "PRODUCT_PRICE"="int", "PRODUCT_QTY_AVAILABLE" = "int"),
-  "SHIPPING" = c("SHIPPING_ID" = "int","ORDER_ID"="int"),
-  "ADS" = c("AD_ID"="int","PRODUCT_ID"="int"),
+  "SHIPPING" = c("SHIPPING_ID" = "int","ORDER_ID"="int","DISPATCH_DATE"="date","DELIVERY_DATE"="date"),
+  "ADS" = c("AD_ID"="int","PRODUCT_ID"="int","ADS_START_DATE"="date","ADS_END_DATE"="date"),
   "ORDERS" = c("ORDER_ID"="int","CUSTOMER_ID"="int","PRODUCT_ID"="int",
                "ORDER_ITEM_QTY"="int","REVIEW_RATING"="int"),
-  "ORDER_DETAIL" = c("ORDER_ID"="int","ORDER_STATUS_ID"="int","PAYMENT_METHOD_ID"="int"),
+  "ORDER_DETAIL" = c("ORDER_ID"="int","ORDER_STATUS_ID"="int","PAYMENT_METHOD_ID"="int","PURCHASE_DATE"="date"),
   "ORDER_STATUS" = c("ORDER_STATUS_ID"="int"),
   "PAYMENT_METHOD" = c("PAYMENT_METHOD_ID"="int")
 )
