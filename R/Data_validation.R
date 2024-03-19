@@ -313,7 +313,7 @@ if (exists("order_detail_df") && exists("orders_df")) {
 ### checking referential integrity for ads_df and product_df
 if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
   if (exists("product_df")) {
-    p_key <- unique(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID)
+    p_key <- unique(c(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID))
   } else if (exists("PRODUCT")) {
     p_key <- PRODUCT$PRODUCT_ID
   }
@@ -344,7 +344,7 @@ if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_s
 ### checking referential integrity for category_df and product_df
 if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
-    f_key <- unique(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID)
+    f_key <- unique(c(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID))
   } else if (exists("PRODUCT")) {
     f_key <- PRODUCT$PRODUCT_CATEGORY_ID
   }
@@ -366,7 +366,7 @@ if (exists("SUPPLIER") || exists("supplier_df") && (exists("product_df"))) {
     f_key <- product_df$SUPPLIER_ID
   } 
   if (exists("supplier_df")){
-    p_key <- unique(supplier_df$SUPPLIER_ID,SUPPLIER$SUPPLIER_ID)
+    p_key <- unique(c(supplier_df$SUPPLIER_ID,SUPPLIER$SUPPLIER_ID))
   } else if (exists("SUPPLIER")) {
     p_key <- SUPPLIER$SUPPLIER_ID
   }
@@ -430,7 +430,7 @@ if (exists("customer_df") || exists("customer_address_df") && (exists("CUSTOMER_
     f_key <- customer_df$CUSTOMER_ADDRESS_ID
   } 
   if (exists("customer_address_df")){
-    p_key <- unique(customer_address_df$CUSTOMER_ADDRESS_ID,CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID)
+    p_key <- unique(c(customer_address_df$CUSTOMER_ADDRESS_ID,CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID))
   } else if (exists("CUSTOMER_ADDRESS")) {
     f_key <- CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID
   }
@@ -449,7 +449,7 @@ if (exists("supplier_df") || exists("supplier_address_df") && (exists("SUPPLIER_
     f_key <- supplier_df$SUPPLIER_ADDRESS_ID
   } 
   if (exists("supplier_address_df")){
-    p_key <- unique(supplier_address_df$SUPPLIER_ADDRESS_ID,SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID)
+    p_key <- unique(c(supplier_address_df$SUPPLIER_ADDRESS_ID,SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID))
   } else if (exists("SUPPLIER_ADDRESS")) {
     f_key <- SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID
   }
