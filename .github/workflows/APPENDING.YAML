@@ -1,4 +1,4 @@
-name: Update Data on SQL
+name: Append data Iteration
 
 on:
 #  schedule:
