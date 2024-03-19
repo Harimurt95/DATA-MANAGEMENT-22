@@ -7,19 +7,38 @@ library(DBI)
 my_connection <- RSQLite::dbConnect(RSQLite::SQLite(), "Database/sample.db")
 
 # Read in data
-all_files <- list.files(path = "Data_Upload", pattern = "*.csv", full.names = TRUE)
+product_category_df <- readr::read_csv("Data_Upload/PRODUCT_CATEGORY_dataset/PRODUCT_CATEGORY.csv")
+product_df <- readr :: read_csv("Data_Upload/PRODUCT_dataset/PRODUCT.csv")
+country_df <- readr:: read_csv("Data_Upload/COUNTRY_dataset/COUNTRY.csv")
+customer_address_df <- readr::read_csv("Data_Upload/CUSTOMER_ADDRESS_dataset/CUSTOMER_ADDRESS.csv")
+orders_df <- readr:: read_csv("Data_Upload/ORDERS_dataset/ORDERS.csv")
+order_detail_df <- readr:: read_csv("Data_Upload/ORDER_DETAIL_dataset/ORDER_DETAIL.csv")
+order_status_df <- readr:: read_csv("Data_Upload/ORDER_STATUS_dataset/ORDER_STATUS.csv")
+payment_method_df <- readr::read_csv("Data_Upload/PAYMENT_METHOD_dataset/PAYMENT_METHOD.csv")
+shipping_df <- readr:: read_csv("Data_Upload/SHIPPING_dataset/SHIPPING.csv")
+supplier_df <- readr :: read_csv("Data_Upload/SUPPLIER_dataset/SUPPLIER.csv")
+supplier_address_df <- readr :: read_csv("Data_Upload/SUPPLIER_ADDRESS_dataset/SUPPLIER_ADDRESS.csv")
+customer_df <- readr :: read_csv("Data_Upload/CUSTOMER_dataset/CUSTOMER.csv")
+ads_df <- readr :: read_csv("Data_Upload/ADS_dataset/ADS.csv")
 
-create_df <- function(file_name) {
-  name <- basename(file_name)
-  name <- gsub(".csv$", "", name) 
-  df_name <- tolower(paste0(name, "_df"))
-  return(df_name)
-}
 
-for (file in all_files) {
-  data_frame_name <- create_df(file)
-  assign(data_frame_name, read_csv(file))
-}
+all_files <- c()
+
+all_files <- c(all_files, "Data_Upload/PRODUCT_CATEGORY_dataset/PRODUCT_CATEGORY.csv")
+all_files <- c(all_files, "Data_Upload/PRODUCT_dataset/PRODUCT.csv")
+all_files <- c(all_files, "Data_Upload/COUNTRY_dataset/COUNTRY.csv")
+all_files <- c(all_files, "Data_Upload/CUSTOMER_ADDRESS_dataset/CUSTOMER_ADDRESS.csv")
+all_files <- c(all_files, "Data_Upload/ORDERS_dataset/ORDERS.csv")
+all_files <- c(all_files, "Data_Upload/ORDER_DETAIL_dataset/ORDER_DETAIL.csv")
+all_files <- c(all_files, "Data_Upload/ORDER_STATUS_dataset/ORDER_STATUS.csv")
+all_files <- c(all_files, "Data_Upload/PAYMENT_METHOD_dataset/PAYMENT_METHOD.csv")
+all_files <- c(all_files, "Data_Upload/SHIPPING_dataset/SHIPPING.csv")
+all_files <- c(all_files, "Data_Upload/SUPPLIER_dataset/SUPPLIER.csv")
+all_files <- c(all_files, "Data_Upload/SUPPLIER_ADDRESS_dataset/SUPPLIER_ADDRESS.csv")
+all_files <- c(all_files, "Data_Upload/CUSTOMER_dataset/CUSTOMER.csv")
+all_files <- c(all_files, "Data_Upload/ADS_dataset/ADS.csv")
+
+
 
 # Generate Data for SHIPPING
 # Generate Dispatch date
@@ -64,7 +83,7 @@ for (file_path in all_files){
 
 # Check for unique constraint for primary key
 for (file_path in all_files){
-  if (file_path != "Data_Upload/ORDERS.csv"){
+  if (file_path != "Data_Upload/ORDERS_dataset/ORDERS.csv"){
     this_file_contents <- readr::read_csv(file_path)
     number_of_rows <- nrow(this_file_contents)
     print(paste0("Checking for: ",file_path))
@@ -78,12 +97,59 @@ for (file_path in all_files){
   }
 }
 
+# Check column names
+datasets <- ls(pattern = "_df$")
+for (data in datasets) {
+  cat(data, "columns:", "\n")
+  print(names(get(data)))
+  cat("\n")
+}
+
+
+# Check missing values
+for (data in datasets) {
+  df <- get(data)  
+  if (is.data.frame(df)) {  
+    missing_values <- colSums(is.na(df)) 
+    print(missing_values)
+  }
+}
+
+# Check unique values
+for (data in datasets) {
+  df <- get(data) 
+  unique_values <- sapply(df, function(x) if (is.vector(x)) length(unique(x)) else NA)
+  print(paste("Unique values in columns of", data, ":"))
+  print(unique_values)
+}
+
+# Check structure
+for (data in datasets){
+  df <- get(data)
+  str(df)
+}
+
+### checking for duplicated rows
+for (index in seq_along(datasets)){
+  if (any(duplicated(datasets[[index]]))){
+    print("Duplicate values found!")
+  } else{
+    print("Duplicates not found!")
+  }
+}
 
 # Convert data type
 convert_to_integer <- function(df) {
   cols <- grep("_ID$", names(df), value = TRUE)
   df[cols] <- lapply(df[cols], as.integer)
   return(df)
+}
+
+if (exists("shipping_df")) {
+  try({
+    shipping_df <- convert_to_integer(shipping_df)
+    ads_df <- convert_to_integer(ads_df)
+  }, silent = TRUE)
 }
 
 if (exists("ads_df")) {
@@ -158,54 +224,13 @@ if (exists("order_status_df")) {
   }, silent = TRUE)
 }
 
-if (exists("category_df")) {
+if (exists("product_category_df")) {
   try({
-    category_df$PRODUCT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PRODUCT_CATEGORY_ID))
-    category_df$PARENT_CATEGORY_ID <- as.integer(sub("^0+", "", category_df$PARENT_CATEGORY_ID))
+    product_category_df$PRODUCT_CATEGORY_ID <- as.integer(sub("^0+", "", product_category_df$PRODUCT_CATEGORY_ID))
+    product_category_df$PARENT_CATEGORY_ID <- as.integer(sub("^0+", "", product_category_df$PARENT_CATEGORY_ID))
   }, silent = TRUE)
 }
 
-
-# Check column names
-datasets <- ls(pattern = "_df$")
-for (data in datasets) {
-  cat(data, "columns:", "\n")
-  print(names(get(data)))
-  cat("\n")
-}
-
-
-# Check missing values
-for (data in datasets) {
-  df <- get(data)  
-  if (is.data.frame(df)) {  
-    missing_values <- colSums(is.na(df)) 
-    print(missing_values)
-  }
-}
-
-# Check unique values
-for (data in datasets) {
-  df <- get(data) 
-  unique_values <- sapply(df, function(x) if (is.vector(x)) length(unique(x)) else NA)
-  print(paste("Unique values in columns of", data, ":"))
-  print(unique_values)
-}
-
-# Check structure
-for (data in datasets){
-  df <- get(data)
-  str(df)
-}
-
-### checking for duplicated rows
-for (index in seq_along(datasets)){
-  if (any(duplicated(datasets[[index]]))){
-    print("Duplicate values found!")
-  } else{
-    print("Duplicates not found!")
-  }
-}
 
 library(validate)
 
@@ -260,7 +285,7 @@ if (exists("ads_df")) {
     print("Start date is after end date")
   }
 } else {
-  print("advert_df does not exist")
+  print("ads_df does not exist")
 }
 
 # Check dispatch date and delivery date
@@ -326,7 +351,7 @@ if (exists("order_detail_df") && exists("orders_df")) {
   }
 }
 
-### checking referential integrity for advert_df and product_df
+### checking referential integrity for ads_df and product_df
 if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
   if (exists("product_df")) {
     p_key <- unique(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID)
@@ -357,15 +382,15 @@ if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_s
 }
 
 
-### checking referential integrity for category_df and product_df
+### checking referential integrity for product_category_df and product_df
 if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
     f_key <- unique(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID)
   } else if (exists("PRODUCT")) {
     f_key <- PRODUCT$PRODUCT_CATEGORY_ID
   }
-  if (exists("category_df")){
-    p_key <- category_df$PRODUCT_CATEGORY_ID
+  if (exists("product_category_df")){
+    p_key <- product_category_df$PRODUCT_CATEGORY_ID
   } else p_key <- PRODUCT_CATEGORY$PRODUCT_CATEGORY_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
@@ -554,8 +579,8 @@ if (exists("ads_df")) {
   RSQLite::dbWriteTable(my_connection, "ADS", ads_df, overwrite = FALSE, append = TRUE)
 } 
 
-if (exists("category_df")) {
-  RSQLite::dbWriteTable(my_connection, "PRODUCT_CATEGORY", category_df, overwrite = FALSE, append = TRUE)
+if (exists("product_category_df")) {
+  RSQLite::dbWriteTable(my_connection, "PRODUCT_CATEGORY", product_category_df, overwrite = FALSE, append = TRUE)
 } 
 
 expected_PAYMENT_METHOD <- c("PAYMENT_METHOD_ID", "PAYMENT_METHOD_NAME")
@@ -584,9 +609,10 @@ expected_SUPPLIER <- c("SUPPLIER_ID", "SUPPLIER_FIRST_NAME", "SUPPLIER_MIDDLE_NA
 
 expected_SUPPLIER_ADDRESS <- c("SUPPLIER_ADDRESS_ID", "SUPPLIER_POSTCODE", "SUPPLIER_CITY", "COUNTRY_ID")
 
-all_files <- list.files("Data_Upload/")
+
 for (variable in all_files){
   table_name <-  gsub(".csv", "", variable)
+  table_name <- basename(table_name)
   if (table_name == "CUSTOMER"){
     actual_schema <- dbListFields(my_connection, table_name)
     if(identical(expected_CUSTOMER, actual_schema)) {
@@ -613,7 +639,7 @@ for (variable in all_files){
   }
   if (table_name == "PRODUCT_CATEGORY"){
     actual_schema <- dbListFields(my_connection, table_name)
-    if(identical(expected_CATEGORY, actual_schema)) {
+    if(identical(expected_PRODUCT_CATEGORY, actual_schema)) {
       print("PRODUCT_CATEGORY Schema validated sucessfully")
     }else{
       print("PRODUCT_CATEGORY Schema validation failed")
