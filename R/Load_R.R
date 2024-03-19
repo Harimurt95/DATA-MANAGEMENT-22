@@ -312,8 +312,8 @@ list2env(data_frames, envir = .GlobalEnv)
 
 
 ### checking referential integrity for customer_df and order_df
-if (exists("customer_df") && exists("orders_df")) {
-  p_key <- unique(customer_df$CUSTOMER_ID,CUSTOMER$CUSTOMER_ID)
+if (((exists("customer_df") || (exists("CUSTOMER"))) && (exists("orders_df")) || (exists("ORDERS")))) {
+  p_key <- unique(c(customer_df$CUSTOMER_ID,CUSTOMER$CUSTOMER_ID))
   f_key <- orders_df$CUSTOMER_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
@@ -323,9 +323,9 @@ if (exists("customer_df") && exists("orders_df")) {
 }
 
 ### checking referential integrity for product_df and orders_df
-if (exists("orders_df") && (exists("product_df") || exists("PRODUCT"))) {
+if (((exists("orders_df")) || (exists("ORDERS"))) && ((exists("product_df")) || (exists("PRODUCT")))) {
   if (exists("product_df")) {
-    p_key <- unique(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID)
+    p_key <- unique(c(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID))
   } else if (exists("PRODUCT")) {
     p_key <- PRODUCT$PRODUCT_ID
   }
@@ -341,7 +341,7 @@ if (exists("orders_df") && (exists("product_df") || exists("PRODUCT"))) {
 
 
 ### checking referential integrity for order_details and order_df
-if (exists("order_detail_df") && exists("orders_df")) {
+if (((exists("order_detail_df")) || (exists("ORDER_DETAIL"))) && ((exists("orders_df")) || (exists("ORDERS")))) {
   p_key <- order_detail_df$ORDER_ID
   f_key <- orders_df$ORDER_ID
   if (all(f_key %in% p_key)) {
@@ -352,9 +352,9 @@ if (exists("order_detail_df") && exists("orders_df")) {
 }
 
 ### checking referential integrity for ads_df and product_df
-if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
+if (((exists("ads_df")) || (exists("ADS"))) && ((exists("product_df")) || (exists("PRODUCT")))) {
   if (exists("product_df")) {
-    p_key <- unique(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID)
+    p_key <- unique(c(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID))
   } else if (exists("PRODUCT")) {
     p_key <- PRODUCT$PRODUCT_ID
   }
@@ -369,7 +369,7 @@ if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
 }
 
 ### checking referential integrity for order_detail_df and order_status_df
-if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_status_df")))) {
+if (((exists("order_detail_df")) || (exists("ORDER_DETAIL"))) && ((exists("ORDER_STATUS")) || (exists("order_status_df")))) {
   f_key <- order_detail_df$ORDER_STATUS_ID
   if (exists("order_status_df")) {
     p_key <- order_detail_df$ORDER_STATUS_ID
@@ -382,15 +382,15 @@ if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_s
 }
 
 
-### checking referential integrity for product_category_df and product_df
+### checking referential integrity for category_df and product_df
 if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
-    f_key <- unique(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID)
+    f_key <- unique(c(product_df$PRODUCT_CATEGORY_ID,PRODUCT$PRODUCT_CATEGORY_ID))
   } else if (exists("PRODUCT")) {
     f_key <- PRODUCT$PRODUCT_CATEGORY_ID
   }
-  if (exists("product_category_df")){
-    p_key <- product_category_df$PRODUCT_CATEGORY_ID
+  if (exists("category_df")){
+    p_key <- category_df$PRODUCT_CATEGORY_ID
   } else p_key <- PRODUCT_CATEGORY$PRODUCT_CATEGORY_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
@@ -402,12 +402,12 @@ if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product
 }
 
 ### checking the referential integrity for supplier_df and product_df
-if (exists("SUPPLIER") || exists("supplier_df") && (exists("product_df"))) {
+if (((exists("SUPPLIER")) || (exists("supplier_df"))) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
     f_key <- product_df$SUPPLIER_ID
   } 
   if (exists("supplier_df")){
-    p_key <- unique(supplier_df$SUPPLIER_ID,SUPPLIER$SUPPLIER_ID)
+    p_key <- unique(c(supplier_df$SUPPLIER_ID,SUPPLIER$SUPPLIER_ID))
   } else if (exists("SUPPLIER")) {
     p_key <- SUPPLIER$SUPPLIER_ID
   }
@@ -422,8 +422,8 @@ if (exists("SUPPLIER") || exists("supplier_df") && (exists("product_df"))) {
 
 
 ### checking referential integrity for orders_df and shipping_df
-if (exists("order_detail_df") && (exists("shipping_df"))) {
-  p_key <- order_detail_df$ORDER_ID
+if (((exists("order_detail_df") || (exists("ORDER_DETAIL"))) && (exists("shipping_df")))) {
+  p_key <- unique(c(order_detail_df$ORDER_ID,ORDER_DETAIL$ORDER_ID))
   f_key <- shipping_df$ORDER_ID
   if (all(f_key %in% p_key)) {
     print("Referential Integrity maintained")
@@ -466,12 +466,12 @@ if (((exists("COUNTRY")) || (exists("country_df")) && (exists("customer_address_
 }
 
 ### checking referential integrity for customer_df and customer_address_df
-if (exists("customer_df") || exists("customer_address_df") && (exists("CUSTOMER_ADDRESS"))) {
+if (exists("customer_df") && (exists("customer_address_df")) || (exists("CUSTOMER_ADDRESS"))) {
   if (exists("customer_df")) {
     f_key <- customer_df$CUSTOMER_ADDRESS_ID
   } 
   if (exists("customer_address_df")){
-    p_key <- unique(customer_address_df$CUSTOMER_ADDRESS_ID,CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID)
+    p_key <- unique(c(customer_address_df$CUSTOMER_ADDRESS_ID,CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID))
   } else if (exists("CUSTOMER_ADDRESS")) {
     f_key <- CUSTOMER_ADDRESS$CUSTOMER_ADDRESS_ID
   }
@@ -485,12 +485,12 @@ if (exists("customer_df") || exists("customer_address_df") && (exists("CUSTOMER_
 }
 
 ### checking referential integrity for suppllier_df and supplier_address_df
-if (exists("supplier_df") || exists("supplier_address_df") && (exists("SUPPLIER_ADDRESS"))) {
+if ((exists("supplier_df")) && ((exists("supplier_address_df")) || (exists("SUPPLIER_ADDRESS")))) {
   if (exists("supplier_df")) {
     f_key <- supplier_df$SUPPLIER_ADDRESS_ID
   } 
   if (exists("supplier_address_df")){
-    p_key <- unique(supplier_address_df$SUPPLIER_ADDRESS_ID,SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID)
+    p_key <- unique(c(supplier_address_df$SUPPLIER_ADDRESS_ID,SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID))
   } else if (exists("SUPPLIER_ADDRESS")) {
     f_key <- SUPPLIER_ADDRESS$SUPPLIER_ADDRESS_ID
   }

@@ -271,7 +271,7 @@ list2env(data_frames, envir = .GlobalEnv)
 
 
 ### checking referential integrity for customer_df and order_df
-if (((exists("customer_df") || (exists("CUSTOMER"))) && exists("orders_df"))) {
+if (((exists("customer_df") || (exists("CUSTOMER"))) && (exists("orders_df")) || (exists("ORDERS")))) {
   p_key <- unique(c(customer_df$CUSTOMER_ID,CUSTOMER$CUSTOMER_ID))
   f_key <- orders_df$CUSTOMER_ID
   if (all(f_key %in% p_key)) {
@@ -282,7 +282,7 @@ if (((exists("customer_df") || (exists("CUSTOMER"))) && exists("orders_df"))) {
 }
 
 ### checking referential integrity for product_df and orders_df
-if (exists("orders_df") && (exists("product_df") || exists("PRODUCT"))) {
+if (((exists("orders_df")) || (exists("ORDERS"))) && ((exists("product_df")) || (exists("PRODUCT")))) {
   if (exists("product_df")) {
     p_key <- unique(c(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID))
   } else if (exists("PRODUCT")) {
@@ -300,7 +300,7 @@ if (exists("orders_df") && (exists("product_df") || exists("PRODUCT"))) {
 
 
 ### checking referential integrity for order_details and order_df
-if (exists("order_detail_df") && exists("orders_df")) {
+if (((exists("order_detail_df")) || (exists("ORDER_DETAIL"))) && ((exists("orders_df")) || (exists("ORDERS")))) {
   p_key <- order_detail_df$ORDER_ID
   f_key <- orders_df$ORDER_ID
   if (all(f_key %in% p_key)) {
@@ -311,7 +311,7 @@ if (exists("order_detail_df") && exists("orders_df")) {
 }
 
 ### checking referential integrity for ads_df and product_df
-if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
+if (((exists("ads_df")) || (exists("ADS"))) && ((exists("product_df")) || (exists("PRODUCT")))) {
   if (exists("product_df")) {
     p_key <- unique(c(product_df$PRODUCT_ID,PRODUCT$PRODUCT_ID))
   } else if (exists("PRODUCT")) {
@@ -328,7 +328,7 @@ if (exists("ads_df") && (exists("product_df") || exists("PRODUCT"))) {
 }
 
 ### checking referential integrity for order_detail_df and order_status_df
-if ((exists("order_detail_df")) && ((exists("ORDER_STATUS")) || (exists("order_status_df")))) {
+if (((exists("order_detail_df")) || (exists("ORDER_DETAIL"))) && ((exists("ORDER_STATUS")) || (exists("order_status_df")))) {
   f_key <- order_detail_df$ORDER_STATUS_ID
   if (exists("order_status_df")) {
     p_key <- order_detail_df$ORDER_STATUS_ID
@@ -361,7 +361,7 @@ if (((exists("PRODUCT_CATEGORY")) || exists("category_df")) && ((exists("product
 }
 
 ### checking the referential integrity for supplier_df and product_df
-if (exists("SUPPLIER") || exists("supplier_df") && (exists("product_df"))) {
+if (((exists("SUPPLIER")) || (exists("supplier_df"))) && ((exists("product_df") || exists("PRODUCT")))) {
   if (exists("product_df")) {
     f_key <- product_df$SUPPLIER_ID
   } 
@@ -425,7 +425,7 @@ if (((exists("COUNTRY")) || (exists("country_df")) && (exists("customer_address_
 }
 
 ### checking referential integrity for customer_df and customer_address_df
-if (exists("customer_df") || exists("customer_address_df") && (exists("CUSTOMER_ADDRESS"))) {
+if (exists("customer_df") && (exists("customer_address_df")) || (exists("CUSTOMER_ADDRESS"))) {
   if (exists("customer_df")) {
     f_key <- customer_df$CUSTOMER_ADDRESS_ID
   } 
@@ -444,7 +444,7 @@ if (exists("customer_df") || exists("customer_address_df") && (exists("CUSTOMER_
 }
 
 ### checking referential integrity for suppllier_df and supplier_address_df
-if (exists("supplier_df") || exists("supplier_address_df") && (exists("SUPPLIER_ADDRESS"))) {
+if ((exists("supplier_df")) && ((exists("supplier_address_df")) || (exists("SUPPLIER_ADDRESS")))) {
   if (exists("supplier_df")) {
     f_key <- supplier_df$SUPPLIER_ADDRESS_ID
   } 
