@@ -36,11 +36,19 @@ jobs:
       - name: Execute R script for second iteration 
         run: |
           Rscript R/Append_R.R
-      - name: Add files
+      - name: Add data to Database
         run: |
           git config --global user.email "shirui.gu@warwick.ac.uk"
           git config --global user.name "SherryG810"
           git add --all Database/
+      - name: Execute R script for data analysis
+        run: |
+          Rscript R/Data_analysis.R
+      - name: Add data analysis
+        run: |
+          git config --global user.email "shirui.gu@warwick.ac.uk"
+          git config --global user.name "SherryG810"
+          git add --all Figures/
       - name: Commit files
         run: |
           git commit -m "Automate DDL Process"
