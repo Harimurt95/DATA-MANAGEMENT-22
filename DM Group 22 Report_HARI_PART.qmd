@@ -1,0 +1,395 @@
+---
+title: "A real-world e-commerce data environment"
+author: "Group 22"
+format: pdf
+toc: true
+editor: visual
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,attr.source='.numberLines', eval = FALSE)
+
+
+```
+
+**Transforming Logical into Physical Schemas**
+
+The process of transforming logical schemas into physical involve identifying table that is necessary for the e-commerce environment. Another consideration in transforming logical schemas into physical one is the normality of the database. While most physical schemas are reflection of identified entities and relationship in the ER, some physical schemas are added to ensure at least 3NF form are achieved. Following are additional physical schemas based on the its necessity to maintain normalization.
+
+1.  2NF
+
+    a\. separation between ORDER_DETAIL and ORDERS were due to nature of attributes in the ORDER_DETAIL schema that only dependent on ORDER_ID
+
+2.  3NF
+
+    a\. separation between CUSTOMER_ADDRESS schema from CUSTOMER schema due to dependency of address related data to the address identifier (CUSTOMER_ADDRESS_ID)
+
+    b\. separation between COUNTRY schema from both CUSTOMER_ADDRESS and SUPPLIER_ADDRESS schema due to dependency of Country Name to the country identifier (COUNTRY_ID)
+
+    c\. separation between PAYMENT_METHOD schema from ORDERS due to dependency of Payment Method description to the Payment Method identifier (PAYMENT_METHOD_ID)
+
+    d\. separation between ORDER_STATUS schema from ORDERS due to dependency of Order Status description to the Order Status identifier (ORDER_STATUS_ID)
+
+    e\. separation between SHIPPING schema from ORDERS due to dependency of Shipping details to the Shipping identifier (SHIPPING_ID)
+
+    f\. separation between SUPPLIER_ADDRESS schema from SUPPLIER schema due to dependency of address related data to the address identifier (SUPPLIER_ADDRESS_ID)
+
+Transformation was done in R using SQLite library. Transformation involves “CREATE TABLE” function, declaration of attribute’s data type, declaration of primary key, declaration of foreign key and its origin table, and declaration of the attribute’s allowance for NULL. In total, 12 physical schemas were created simulate simple e-commerce environments while simultaneously maintaining 3NF. physical schemas containing Primary and Foreign Key derived from the established ER Diagram and logical schemas are in Appendix B.
+
+\newpage
+
+# Part 2: Data Generation and Management
+
+After Physical schemas was created, data generation method was devised as mean to populate data with goal to mimic those on e-commerce. The first half of this part will explore the data generation technique used while the second half will describe the data insertion and validation technique.
+
+## - 2.1: Synthetic Data Generation
+
+The database was populated using a combination of data generation tools, primarily Mockaroo, ChatGPT, Bard, and Copilot, as well as R for certain attributes that are logically linked to others. Mockaroo facilitated the generation of primary keys, numeric, date-related, and identity data, while publicly established language models (LLMs) such as ChatGPT and Copilot were employed for e-commerce specific data like product names, descriptions, and advertisements. Data from different sources were integrated using Microsoft Excel, leveraging functions like INDEX, SORTBY, RANDARRAY, and RANDBETWEEN to ensure randomness while reflecting e-commerce environments.
+
+The exception in the data generation pattern is on SHIPPING table. since Mockaroo randomly generates dispatch date and delivery date in SHIPPING table, the dates do not reflect the realistic pattern, as dispatch date should be later than the purchase date, and delivery date should be later than the dispatch date. To solve this, we use R to edit the dates for each observation. Firstly, we set dispatch date to be 0 to 7 days later than the purchase date (from order table), the code below assigns random values between 0 and 7 for each order and add the number of days on its corresponding purchase date. Secondly, delivery dates are set to be 3-10 days later than the dispatch date.
+
+Then, we need to match the order status with the order's shipping status. For example, accepted orders will be dispatched soon, so they have SHIPPING_ID, but not have dispatch date and delivery date. Delivering orders have dispatch date but do not have delivery date. Closed (delivered) orders and returned orders have both dispatch and delivery date. Additionally, pending and rejected orders do not have SHIPPING_ID. The R codes to make these changes are included in the below chunk.
+
+Another attribute that is closely related with order status is REVIEW_RATING. Only the closed (delivered) orders have review ratings for each product in that order. We randomly assign review ratings between 1 to 5 for closed orders via the codes below:
+
+Additionally, since Mockaroo randomly generates dispatch date and delivery date in SHIPPING table, the dates do not reflect the realistic pattern, as dispatch date should be later than the purchase date, and delivery date should be later than the dispatch date. To solve this, we use R to edit the dates for each observation. Firstly, we set dispatch date to be 0 to 7 days later than the purchase date (from order table), the code below assign random values between 0 and 7 for each order, and add the number of days on its corresponding purchase date. Secondly, delivery dates are set to be 3-10 days later than the dispatch date.
+
+```{r, eval=TRUE}
+library(readr)
+library(RSQLite)
+library(dplyr)
+library(DBI)
+
+# Build connections
+my_connection <- RSQLite::dbConnect(RSQLite::SQLite(), "Database/sample.db")
+```
+
+```{r, eval=FALSE}
+# Read data to dataframe
+category_df <- readr::read_csv("Data_Upload/CATEGORY.csv")
+product_df <- readr :: read_csv("Data_Upload/PRODUCT.csv")
+country_df <- readr:: read_csv("Data_Upload/COUNTRY.csv")
+customer_address_df <- readr::read_csv("Data_Upload/CUSTOMER_ADDRESS.csv")
+order_df <- readr:: read_csv("Data_Upload/ORDERS.csv")
+order_detail_df <- readr:: read_csv("Data_Upload/ORDER_DETAIL.csv")
+order_status_df <- readr:: read_csv("Data_Upload/ORDER_STATUS.csv")
+payment_method_df <- readr::read_csv("Data_Upload/PAYMENT_METHOD.csv")
+shipping_df <- readr:: read_csv("Data_Upload/SHIPPING.csv")
+supplier_df <- readr :: read_csv("Data_Upload/SUPPLIER.csv")
+supplier_add_df <- readr :: read_csv("Data_Upload/SUPPLIER_ADDRESS.csv")
+customer_df <- readr :: read_csv("Data_Upload/CUSTOMER.csv")
+advert_df <- readr :: read_csv("Data_Upload/ADS.csv")
+```
+
+```{r, eval=FALSE}
+# Generate Data for SHIPPING
+# Generate Dispatch date
+set.seed(123)
+#unique_order_ids <- unique(order_df$ORDER_ID)
+days_to_add <- sample(0:7, length(order_detail_df$ORDER_ID), replace = TRUE)
+days_to_add_df <- data.frame(order_id = order_detail_df$ORDER_ID, days_to_add = days_to_add)
+shipping_df$DISPATCH_DATE <- as.Date(order_detail_df$PURCHASE_DATE[match(shipping_df$ORDER_ID, order_detail_df$ORDER_ID)], format = "%m/%d/%Y") + days_to_add_df$days_to_add[match(shipping_df$ORDER_ID, days_to_add_df$order_id)]
+
+# Generate Delivery date
+days_to_add <- sample(3:10, length(order_detail_df$ORDER_ID), replace = TRUE)
+days_to_add_df <- data.frame(order_id = order_detail_df$ORDER_ID, days_to_add = days_to_add)
+shipping_df$DELIVERY_DATE <- as.Date(shipping_df$DISPATCH_DATE,format = "%m/%d/%Y") + days_to_add_df$days_to_add[match(shipping_df$ORDER_ID, days_to_add_df$order_id)]
+```
+
+Then, we need to match the order status with the order's shipping status. For example, accepted orders will be dispatched soon, so they have SHIPPING_ID, but not have dispatch date and delivery date. Delivering orders have dispatch date but do not have delivery date. Closed (delivered) orders and returned orders have both dispatch and delivery date. Additionally, pending and rejected orders do not have SHIPPING_ID. The R codes to make these changes are included in the below chunk.
+
+```{r, eval=FALSE}
+# Remove orders without shipping information
+order_ids_status_2 <- order_detail_df$ORDER_ID[order_detail_df$ORDER_STATUS_ID == 2]
+shipping_df$DISPATCH_DATE[shipping_df$ORDER_ID %in% order_ids_status_2] <- NA
+shipping_df$DELIVERY_DATE[shipping_df$ORDER_ID %in% order_ids_status_2] <- NA
+
+order_ids_status_4 <- order_detail_df$ORDER_ID[order_detail_df$ORDER_STATUS_ID == 4]
+shipping_df$DELIVERY_DATE[shipping_df$ORDER_ID %in% order_ids_status_4] <- NA
+
+order_ids_delete <- order_detail_df$ORDER_ID[order_detail_df$ORDER_STATUS_ID == 1 | order_detail_df$ORDER_STATUS_ID == 3]
+shipping_df <- shipping_df[!shipping_df$ORDER_ID %in% order_ids_delete, ]
+```
+
+Another attribute that is closely related with order status is REVIEW_RATING. Only the closed (delivered) orders have review ratings for each product in that order. We randomly assign review ratings between 1 to 5 for closed orders via the codes below:
+
+```{r,eval=FALSE}
+set.seed(123)
+order_df <- order_df %>%
+  mutate(REVIEW_RATING = sample(1:5, nrow(order_df), replace = TRUE))
+order_no_review <- 
+  order_detail_df$ORDER_ID[order_detail_df$ORDER_STATUS_ID %in% c(1,2,3,4,6)]
+order_df$REVIEW_RATING[order_df$ORDER_ID %in% order_no_review] <- NA
+```
+
+## Appendix B : Transformation into Physical Schemas
+
+**CUSTOMER and CUSTOMER_ADDRESS**
+
+Originally in the ER Diagram and logical schema, CUSTOMER_ADDRESS is part of CUSTOMER. Due to the dependency of address related data to the address identifier (CUSTOMER_ADDRESS_ID), it was imperative that CUSTOMER_ADDRESS must have its own schema with CUSTOMER_ADDRESS_ID as its primary key and COUNTRY_ID as its foreign key that refer to the COUNTRY schema. The separation of CUSTOMER_ADDRESS schema from CUSTOMER schema necessary in achieving 3NF in the database.
+
+```{r, eval=FALSE}
+CREATE TABLE CUSTOMER (
+"CUSTOMER_ID" int primary key,
+"CUSTOMER_EMAIL" varchar(320) not null,
+"CUSTOMER_PHONE_NUMBER" varchar(20) not null,
+"CUSTOMER_FIRST_NAME" varchar(40) not null,
+"CUSTOMER_MIDDLE_NAME" varchar(40) null,
+"CUSTOMER_LAST_NAME" varchar(40) not null,
+"CUSTOMER_DOB" date not null,
+"CUSTOMER_GENDER" varchar(10) not null,
+"CUSTOMER_ADDRESS_ID" int,
+foreign key ("CUSTOMER_ADDRESS_ID")
+  references ADDRESS("CUSTOEMR_ADDRESS_ID")
+);
+```
+
+```{r, eval=FALSE}
+create table CUSTOMER_ADDRESS(
+"CUSTOMER_ADDRESS_ID" int primary key,
+"CUSTOMER_ADDRESS_NUMBER" int not null,
+"CUSTOMER_STREET" varchar(40) not null,
+"CUSTOMER_POSTCODE" int not null,
+"CUSTOMER_CITY" varchar(20) not null,
+"COUNTRY_ID" varchar(10),
+foreign key ("COUNTRY_ID") 
+  references COUNTRY("COUNTRY_ID")
+);
+```
+
+**COUNTRY**
+
+COUNTRY schemas have COUNTRY_ID  as its primary key and no Foreign Key. The separation of COUNTRY from Address-related schemas were based on the assumption that all address related data in the database will refer its country of origin using universal country identification stored in the COUNTRY_ID attribute. Based on this assumption, The separation of COUNTRY from Address-related schemas will reduce the dependencies in the data while at the same time enabling 3NF in the database.
+
+```{r, eval=FALSE}
+create table COUNTRY(
+"COUNTRY_ID" varchar(10) primary key,
+"COUNTRY_NAME" varchar(20) not null
+);
+```
+
+**ADS**
+
+ADS schemas have ADS_ID  as its primary key and PRODUCT_ID from PRODUCT entity as its Foreign Key. The Assumption in the ADS schemas is each ADS_ID will identifies with a product  with no addional clause. Thus, each PRODUCT_ID might contain at maximum one ADS_ID.
+
+```{r, eval=FALSE}
+create table ADS(
+"AD_ID" int primary key,
+"PRODUCT_ID" int,
+"ADS_DESCRIPTION" varchar(50) not null,
+"DISCOUNT_RATE" numeric not null,
+"ADS_START_DATE" date not null,
+"ADS_END_DATE" date not null,
+foreign key ("PRODUCT_ID")
+  references PRODUCT("PRODUCT_ID")
+);
+```
+
+**PRODUCT_CATEGORY**
+
+While the PARENT_CATEGORY_ID have “ID” in its name, the attribute itself is not considered as Primary Key. PARENT_CATEGORY_ID attribute have function to enable self-referencing between sub-categories and its designated parent category. This implementation allows referential integrity without introducing additional schema to the database which inturn aviod adding unnecessary complexity.
+
+```{r, eval=FALSE}
+create table PRODUCT_CATEGORY(
+"PRODUCT_CATEGORY_ID" int primary key,
+"PARENT_CATEGORY_ID" int,
+"CATEGORY_NAME" varchar(40) not null,
+foreign key ("PARENT_CATEGORY_ID") 
+  references CATEGORY("PRODUCT_CATEGORY_ID")
+);
+```
+
+**ORDER breakdown: ORDER_DETAIL, ORDERS, PAYMENT_METHOD, ORDER_STATUS, SHIPPING**
+
+Relationship ORDER in ER Diagram and logical schema further devided into four schemas as mean to keep normalization in the whole data. The physical schemas related to Relationship ORDER are as follow.
+
+1.  ORDER_DETAIL schema contain the status, time of purchase, and method of payment of an order. ORDER_DETAIL schema have ORDER_ID  as its primary key and ORDER_STATUS_ID from ORDER_STATUS and PAYMENT_METHOD_ID  from PAYMENT_METHOD entity as its Foreign Key. The separation between ORDER_DETAIL and ORDERS were due to nature of attributes in the ORDER_DETAIL schema that only dependant on ORDER_ID thus this separation ensure that 2NF is achieved.
+
+    ```{r, eval=FALSE}
+    CREATE TABLE ORDER_DETAIL(
+    "ORDER_ID" int,
+    "ORDER_STATUS_ID" int,
+    "PURCHASE_DATE" date not null,
+    "PAYMENT_METHOD_ID" int,
+    foreign key ("ORDER_STATUS_ID") 
+      references ORDER_STATUS("ORDER_STATUS_ID")
+    foreign key ("PAYMENT_METHOD_ID")
+      references PAYMENT_METHOD("PAYMENT_METHOD_ID")
+    foreign key ("ORDER_ID")
+      references ORDERS("ORDER_ID")
+    );
+    ```
+
+2.  ORDERS schema contain the customer who create the order, the item bought, and the quantity of each item in the order. For the ORDERS schema, ORDER_ID is the primary key; CUSTOMER_ID and PRODUCT_ID is the foreign key. Due to the duplicative nature of ORDER_ID in the ODERS schema, composite primary key consists of ORDER_ID, CUSTOMER_ID, and PRODUCT_ID is designated to ensure 1NF is achieved.
+
+    ```{r, eval=FALSE}
+    CREATE TABLE ORDERS(
+    "ORDER_ID" int,
+    "CUSTOMER_ID" int,
+    "PRODUCT_ID" int,
+    "ORDER_ITEM_QTY" int not null,
+    "REVIEW_RATING" int null,
+    PRIMARY KEY ("ORDER_ID", "CUSTOMER_ID", "PRODUCT_ID"),
+    foreign key ("CUSTOMER_ID")
+      references CUSTOMER("CUSTOMER_ID")
+    foreign key ("PRODUCT_ID")
+      references PRODUCT("PRODUCT_ID")
+    );
+
+    ```
+
+3.  PAYMENT_METHOD schema contain the Payment method available in the e-commerce. The Schema have PAYMENT_METHOD_ID as its primary key and no foreign key. PAYMENT_METHOD in physical schema are meant to achieve 3NF.
+
+    ```{r, eval=FALSE}
+    create table PAYMENT_METHOD(
+    "PAYMENT_METHOD_ID" int primary key,
+    "PAYMENT_METHOD_NAME" varchar(50) not null
+    );
+    ```
+
+4.  ORDER_STATUS schema contain the status of the created order. The Schema have ORDER_STATUS_ID as its primary key and no foreign key. PAYMENT_METHOD in physical schema are meant to achieve 3NF.
+
+    ```{r, eval=FALSE}
+    create table ORDER_STATUS(
+    "ORDER_STATUS_ID" int primary key,
+    "ORDER_STATUS_NAME" varchar(40) not null
+    );
+    ```
+
+5.  SHIPPING schemas contain details on the shipping process of an order which include the shipping identifier, the order that is being shipped, Shipping service provider, the date the order start its delivery, and the date the order arrived at its destination. The schema have SHIPPING_ID as its primary key and ORDER_ID from ORDER_DETAIL schema as its foreign key. The argument for referencing ORDER_ID from ORDER_DETAIL is due to attributes ORDER_STATUS_ID and PURCHASE_DATE that exist in the very schema is necessary in the creation of data for SHIPPING. The detail of SHIPPING data generation will be further elaborated in the data generation section.
+
+    ```{r, eval=FALSE}
+    create table SHIPPING(
+    "SHIPPING_ID" int primary key,
+    "ORDER_ID" int,
+    "SHIPPING_NAME" varchar(40) not null,
+    "DISPATCH_DATE" date null,
+    "DELIVERY_DATE" date null,
+    foreign key ("ORDER_ID")
+      references ORDERS("ORDER_ID")
+    );
+    ```
+
+**PRODUCT**
+
+There are no differences between attributes of PRODUCT in the ER Diagram, Logical Schema, and Physical Schema. PRODUCT_ID will be the primary key while PRODUCT_CATEGORY_ID from PRODUCT_CATEGORY entity and  SUPPLIER_ID from SUPPLIER entity will be the foreign key.
+
+```{r, eval=FALSE}
+create table PRODUCT(
+"PRODUCT_ID" int primary key,
+"PRODUCT_CATEGORY_ID" int,
+"SUPPLIER_ID" int,
+"PRODUCT_NAME" varchar(30) not null,
+"PRODUCT_DESCRIPTION" varchar(100) null,
+"PRODUCT_PRICE" int not null,
+"PRODUCT_QTY_AVAILABLE" int not null,
+foreign key ("PRODUCT_CATEGORY_ID")
+  references CATEGORY("PRODUCT_CATEGORY_ID")
+foreign key ("SUPPLIER_ID")
+  references SUPPLIER("SUPPLIER_ID")
+);
+```
+
+**SUPPLIER and SUPPLIER_ADDRESS**
+
+SUPPLIER entity received the same treatment as the CUSTOMER entity in translating the logical schema to the physical schema. In the physical schema, SUPPLIER_ADDRESS_ID will act as foreign key from SUPPLIER_ADDRESS. The separation of SUPPLIER_ADDRESS from SUPPLIER entity are necessary to achieve 3NF.
+
+```{r, eval=FALSE}
+create table SUPPLIER(
+"SUPPLIER_ID" int primary key,
+"SUPPLIER_FIRST_NAME" varchar(40) not null,
+"SUPPLIER_MIDDLE_NAME" varchar(40) null,
+"SUPPLIER_LAST_NAME" varchar(40) not null,
+"SUPPLIER_ADDRESS_ID" int,
+"SUPPLIER_EMAIL" varchar(40) not null,
+"SUPPLIER_PHONE" varchar(20) not null,
+"SUPPLIER_AGREEMENT" numeric not null,
+foreign key ("SUPPLIER_ADDRESS_ID") 
+  references SUPPLIER_ADDRESS("SUPPLIER_ADDRESS_ID")
+);
+```
+
+```{r, eval=FALSE}
+create table SUPPLIER_ADDRESS(
+"SUPPLIER_ADDRESS_ID" int primary key,
+"SUPPLIER_POSTCODE" int not null,
+"SUPPLIER_CITY" varchar(40) not null,
+"COUNTRY_ID" varchar(10),
+foreign key ("COUNTRY_ID")
+  references COUNTRY("COUNTRY_ID")
+);
+```
+
+## Appendix C : Data Generation
+
+**Data generated through EXCEL: PRODUCT_CATEGORY, ORDER_STATUS, and PAYMENT_METHOD**
+
+Some schema have its data generated through excel due to its small size. The size of data made the data generation through excel more efficient than generating it through Mockaroo or even R. Three schemas that have its data generated through excel are PRODUCT_CATEGORY, ORDER_STATUS, and PAYMENT_METHOD.
+
+**CUSTOMER**
+
+![CUSTOMER on Mockaroo](Mockaroo_CUSTOMER.png)
+
+Data for Eight attributes for CUSTOMER entity were generated through Mockaroo. The integer primary key is generated using character sequence with format "100####" with \# indicate random integer number generated by Mockaroo. The rest of attributes are able to generate data using format data provided by Mockaroo. The generated data, especially CUSTOMER_ID then checked for any duplicate using COUNTIF and VLOOKUP functions in excel.
+
+**SUPPLIER**
+
+![Data generation for SUPPLIER in Mockaroo](Mockaroo_SUPPLIER.png)
+
+Data for seven attributes for SUPPLIER entity were generated through Mockaroo. The integer primary key is generated using character sequence with format "200####" with \# indicate random integer number generated by Mockaroo. The rest of six attributes are able to generate data using format data provided by Mockaroo. The generated data, especially SUPPLIER_ID then checked for any duplicate using COUNTIF and VLOOKUP functions in excel.
+
+**SUPPLIER_ADDRESS and CUSTOMER_ADDRESS Data Generation**
+
+Primary Key for both CUSTOMER_ADDRESS_ID and SUPPLIER_ADDRESS_ID were generated by combining "110" (for CUSTOMER_ADDRESS_ID) and "210" (for SUPPLIER_ADDRESS_ID) with the last four digit of their respective CUSTOMER_ID/SUPPLIER_ID. Three data table were also created through Mockaroo to ensure data integrity in the creation of SUPPLIER_ADDRESS and CUSTOMER_ADDRESS.
+
+1.  COUNTRY
+
+    ![Data Generation for COUNTRY](Mockaroo_COUNTRY.png)
+
+    COUNTRY table were to ensure consistency between COUNTRY_ID with the COUNTRY_NAME. As the assumption was that there is dependency between COUNTRY_ID and COUNTRY_NAME, the COUNTRY table is acknowledged as a physical entity.
+
+2.  POSTCODE
+
+    ![POSTCODE data generation through Mockaroo](Mockaroo_POSTCODE.png)
+
+    While the assumption was that there are no dependency between POSTCODE and CITY, POSTCODE table were created to fasten the generation of POSTCODE and CITY data for both SUPPLIER_ADDRESS and CUSTOMER_ADDRESS. Since was there is no dependency between POSTCODE and CITY, POSTCODE exclusive physical entity is not created.
+
+3.  STREET_NUMBER and STREET_NAME
+
+    As the CUSTOMER entity identified with STREET_NUMBER and STREET_NAME, the said data were generated through LLM with prompt to generate STREET_NUMBER as Integer and STREET_NAME as exclusively Latin Character. The generated STREET_NUMBER and STREET_NAME were then integrated using INDEX, and RANDBETWEEN excel functions. With the assumption that there is no dependency between STREET_NUMBER and STREET_NAME, STREET exclusive physical entity is not created.
+
+**PRODUCT**
+
+![Generating data for PRODUCT schema on Mockaroo](Mockaroo_PRODUCT.png)
+
+Data for Five attributes for PRODUCT entity were generated through Mockaroo. The integer primary key is generated using character sequence with format "300####" with \# indicate random integer number generated by Mockaroo. Data for CATEGORY_ID and SUPPLIER_ID were randomly choosen based on uploaded CATEGORY and SUPPLIER data. PRODUCT_NAME and ADS_DESCRIPTION were generated through LLM by providing them with CATEGORY table before hand. The rest of attributes are able to generate data using format data provided by Mockaroo.
+
+The combination of PRODUCT_NAME and ADS_DESCRIPTION with PRODUCT entity data generated by Mockaroo were done using the reference of PRODUCT_CATEGORY_ID in the PRODUCT schema. Combination of excel function of IF, INDEX, and RANDBETWEEN were utilized to create reasonable PRODUCT data with resonable name and description.
+
+The generated data, especially CUSTOMER_ID then checked for any duplicate using COUNTIF and VLOOKUP functions in excel.
+
+**ADS**
+
+![ADS Data generation in Mockaroo](Mockaroo_ADS.png)
+
+Six attributes for ADS entity were generated through Mockaroo. The integer primary key is generated using character sequence with format "700####" with \# indicate random integer number generated by Mockaroo. data for entity PRODUCT_ID were refering to the data on attribute PRODUCT_ID of PRODUCT entity for maintaining the referential integrity. The data format generation for ADS_END_DATE were using number as mockaroo cannot generate date based on data of ADS_START_DATE. The number represent the number of days the ads running. ADS_END_DATE will be turn into date format in excel after adding the ADS_START_DATE with number on ADS_END_DATE generated by Mockaroo. ADS_DESCRIPTION were generated through LLM by providing them with CATEGORY table before hand. The rest of attributes are able to generate data using format data provided by Mockaroo.
+
+The combination of ADS_DESCRIPTION with ADS data generated by Mockaroo were done using the reference of PRODUCT_CATEGORY_ID in the PRODUCT schema. Combination of excel function of IF, INDEX, and RANDBETWEEN were utilized to create reasonable ADS data with resonable description.
+
+The generated data, especially AD_ID then checked for any duplicate using COUNTIF and VLOOKUP functions in excel.
+
+**ORDER Related Data Generation**
+
+ORDER related entities (ORDERS and ORDER_DETAIL) cannot be directly generated through Mockaroo. The workaround implemented is to create "seeds" of table that will allows ease of data generation for ORDERS and ORDER_DETAIL. following are the the prompt used in Mockaroo for ORDER related entities.
+
+1.  ORDER_PROG
+
+    ![Data generation for ORDER_PROG](Mockaroo_ORDER_PROG.png)
+
+    ORDER_PROG prompt is meant to create relationship between ORDER_ID to CUSTOMER_ID (refer to the uploaded CUSTOMER table) that can be identified by the Mockaroo when the generated ORDER_PROG data uploaded to the Mockaroo. The rest of data generated by the ORDER_PROG prompt are data that dependent only on ORDER_ID. After ORDER_PROG data recorded in Mockaroo, the file then editted in the excel to remove CUSTOMER_ID entity to create ORDER_DETAIL data.
+
+2.  ORDERS
+
+    ![Data Generation for ORDERS](Mockaroo_ORDERS.png)ORDERS prompts on Mockaroo are meant to duplicate relationship between ORDER_ID with CUSTOMER_ID and pair it with the created PRODUCT_ID. ORDER_ITEM_QTY data is also generated through Mockaroo as it dependent on the composite of ORDER_ID, CUSTOMER_ID, and ORDER_ITEM_QTY. The generated data is then labeled as data for ORDERS physical schema.
