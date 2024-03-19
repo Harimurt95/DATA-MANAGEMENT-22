@@ -26,37 +26,18 @@ jobs:
       - name: Install packages
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite","validate","DBI","openxlsx"))'
+          Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite","validate","DBI"))'
       - name: Make R script executable
         run: |
           git update-index --chmod=+x R/Load_R.R      
       - name: Execute R script for validation
         run: |
           Rscript R/Load_R.R
-      - name: Execute R script for second iteration 
-        run: |
-          Rscript R/Append_R.R
       - name: Add data to Database
         run: |
           git config --global user.email "shirui.gu@warwick.ac.uk"
           git config --global user.name "SherryG810"
           git add --all Database/
-      - name: Execute R script for data analysis plots
-        run: |
-          Rscript R/Data_analysis.R
-      - name: Add data analysis
-        run: |
-          git config --global user.email "shirui.gu@warwick.ac.uk"
-          git config --global user.name "SherryG810"
-          git add --all Figures/
-      - name: Execute R script for data analysis(excel results)
-        run: |
-          Rscript R/Data_analysis_excel.R
-      - name: Add data analysis
-        run: |
-          git config --global user.email "shirui.gu@warwick.ac.uk"
-          git config --global user.name "SherryG810"
-          git add --all Excel_results/
       - name: Commit files
         run: |
           git commit -m "Automate DDL Process"
