@@ -1,10 +1,10 @@
-name: Update Data on SQL
+name: Data Analysis
 
-#on:
+on:
 #  schedule:
 #    - cron: '0 */3 * * *' # Run every 3 hours
-#  push:
- #   branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   build:
@@ -26,10 +26,7 @@ jobs:
       - name: Install packages
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite","validate","DBI","openxlsx"))'
-      - name: Make R script executable
-        run: |
-          git update-index --chmod=+x R/Load_R.R      
+          Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite","validate","DBI","openxlsx"))'    
       - name: Execute R script for data analysis plots
         run: |
           Rscript R/Data_analysis.R
