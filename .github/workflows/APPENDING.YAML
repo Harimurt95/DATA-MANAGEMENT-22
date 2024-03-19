@@ -1,10 +1,10 @@
 name: Update Data on SQL
 
-#on:
+on:
 #  schedule:
 #    - cron: '0 */3 * * *' # Run every 3 hours
-#  push:
- #   branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   build:
@@ -27,6 +27,9 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           Rscript -e 'install.packages(c("ggplot2","dplyr","readr","RSQLite","validate","DBI"))'
+      - name: Execute data validation
+        run: |
+          Rscript R/Data_validation.R
       - name: Execute R script for second iteration 
         run: |
           Rscript R/Append_R.R
