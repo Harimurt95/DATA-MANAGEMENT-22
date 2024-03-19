@@ -1,10 +1,10 @@
 name: Update Data on SQL
 
-on:
+#on:
 #  schedule:
 #    - cron: '0 */3 * * *' # Run every 3 hours
-  push:
-    branches: [ main ]
+#  push:
+#    branches: [ main ]
 
 jobs:
   build:
