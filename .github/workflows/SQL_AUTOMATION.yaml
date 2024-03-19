@@ -1,4 +1,4 @@
-name: Append data iteration
+name: Database built
 
 on: workflow_dispatch
 
